@@ -1,0 +1,15 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Mary&Chima//WeddingReception//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:99201733-bea9-449d-8caf-a56c293b1cbe
+DTSTAMP:20250825T213102Z
+SUMMARY:Mary & Chima Wedding Reception
+DESCRIPTION:Join us as we celebrate the marriage of Mary & Chima. An evening of love, laughter, dinner, and dancing. Formal attire requested with a touch of black or white.
+DTSTART;TZID=Europe/Tallinn:20251004T170000
+DTEND;TZID=Europe/Tallinn:20251004T230000
+LOCATION:Golden Hall, Raekoja plats 5, Tallinn, Estonia
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mary &amp; Chima — Wedding Reception</title>
+  <meta name="description" content="Mary & Chima Wedding Reception — 4 October 2025 — Golden Hall, Tallinn" />
+  <link rel="icon" href="assets/monogram_favicon_mary_chima.png" type="image/png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Clean, elegant header -->
+  <header class="header" id="home" role="banner" aria-label="Header">
+    <!-- Navigation bar -->
+    <div class="navbar">
+      <div class="container">
+        <a href="#home" class="brand">
+          <img src="assets/monogram_favicon_mary_chima.png" alt="Monogram" />
+          <span>Mary &amp; Chima</span>
+        </a>
+
+        <button class="nav__toggle" aria-controls="site-nav" aria-expanded="false" aria-label="Toggle menu">☰</button>
+
+        <nav id="site-nav" class="nav" aria-label="Primary">
+          <a href="#story">Our Story</a>
+          <a href="#details">The Day</a>
+          <a href="#rsvp">RSVP</a>
+          <a href="#calendar">Add to Calendar</a>
+          <a href="#photos">Photos</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Elegant title section -->
+    <div class="header__content">
+      <div class="container">
+        <div class="header__kicker">
+          <span class="pill">Wedding Reception</span>
+          <span class="dot">•</span>
+          <span>4 October 2025</span>
+          <span class="dot">•</span>
+          <span>Golden Hall, Tallinn</span>
+        </div>
+
+        <h1 class="header__title">Mary &amp; Chima</h1>
+
+        <p class="header__subtitle">Saturday, 4 October 2025 • 5:00 PM • Golden Hall, Tallinn</p>
+
+        <div id="countdown" class="countdown" aria-live="polite" aria-label="Countdown timer"></div>
+
+        <a href="#rsvp-modal" class="btn btn--primary" id="rsvp-hero-btn">RSVP Here</a>
+      </div>
+    </div>
+  </header>
+
+
+  <main>
+    <section id="story" class="section section--light">
+  <div class="container">
+    <div class="story card story--ornate">
+      <!-- Left: photo + badges -->
+      <div class="story__media">
+        <div class="story__photo" role="img" aria-label="Mary & Chima"></div>
+        <div class="story__badges">
+          <span class="badge">🇳🇬 Abakaliki</span>
+          <span class="badge">🇿🇦 CapeTown</span>
+          <span class="badge">🇪🇪 Tallinn</span>
+        </div>
+      </div>
+
+      <!-- Right: text content -->
+      <div class="story__content">
+        <h2>Our Story</h2>
+        <p class="lead">
+          A journey from 🇳🇬 and 🇿🇦, celebrating our love in 🇪🇪. We’re so grateful to share this moment with our closest people.
+        </p>
+
+        <blockquote class="story__quote">
+          “Two cities, one heartbeat. Forever starts here.”
+        </blockquote>
+
+        <ul class="story__milestones">
+          <li><span>2023</span> Paths crossed and everything changed.</li>
+          <li><span>2024</span> He asked. She said yes.</li>
+          <li><span>2025</span> We celebrate in Tallinn with you.</li>
+        </ul>
+
+        <div class="story__signoff">— Mary &amp; Chima</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+    <section id="details" class="section">
+      <div class="container grid-2">
+        <div class="card card--day">
+  <div class="card__header">
+    <h3>The Wedding Day</h3>
+    <span class="tag">Reception</span>
+  </div>
+
+  <div class="day-badge" aria-label="Date & time">
+    <div class="day-badge__date">
+      <b>Sat</b>
+      <span>04</span>
+      <small>Oct 2025</small>
+    </div>
+    <div class="day-badge__time">
+      <b>5:00 PM</b>
+      <small>Doors open • Tallinn</small>
+    </div>
+  </div>
+
+  <div class="day-rows">
+    <div class="row">
+      <div class="ico" aria-hidden="true">📍</div>
+      <div class="txt"><strong>Venue:</strong> Golden Hall, Raekoja plats 5, Tallinn</div>
+    </div>
+    <div class="row">
+      <div class="ico" aria-hidden="true">👗</div>
+      <div class="txt"><strong>Dress Code:</strong> Formal with a touch of black or white</div>
+    </div>
+    <div class="row">
+      <div class="ico" aria-hidden="true">🗓️</div>
+      <div class="txt"><strong>Plan:</strong> Reception • Dinner • <em>Dinner and dancing to follow</em></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn--primary" href="https://maps.google.com/?q=Raekoja%20plats%205%2C%20Tallinn%2C%20Estonia" target="_blank" rel="noopener">
+      Open in Google Maps
+    </a>
+    <a class="btn btn--ghost" href="#calendar">Add to Calendar</a>
+  </div>
+</div>
+
+        <div class="card card--timeline">
+  <div class="card__header">
+    <h3>Evening Timeline</h3>
+    <span class="tag">Schedule</span>
+  </div>
+
+  <ol class="tl">
+    <li class="tl__item">
+      <time>5:00 PM</time>
+      <span class="tl__dot" aria-hidden="true"></span>
+      <p>Guest arrival &amp; welcome drinks</p>
+    </li>
+
+    <li class="tl__item">
+      <time>5:30 PM</time>
+      <span class="tl__dot" aria-hidden="true"></span>
+      <p>Couple’s entrance</p>
+    </li>
+
+    <li class="tl__item">
+      <time>6:00 PM</time>
+      <span class="tl__dot" aria-hidden="true"></span>
+      <p>Dinner service</p>
+    </li>
+
+    <li class="tl__item">
+      <time>7:30 PM</time>
+      <span class="tl__dot" aria-hidden="true"></span>
+      <p>Toasts</p>
+    </li>
+
+    <li class="tl__item">
+      <time>8:30 PM</time>
+      <span class="tl__dot" aria-hidden="true"></span>
+      <p>Cake cutting &amp; dancing</p>
+    </li>
+
+    <li class="tl__item">
+      <time>10:00 PM</time>
+      <span class="tl__dot" aria-hidden="true"></span>
+      <p>After-party with DJ</p>
+    </li>
+  </ol>
+</div>
+
+      </div>
+    </section>
+
+    <section id="rsvp" class="section section--light">
+      <div class="container grid-2">
+        <div class="card card--rsvp">
+  <div class="card__header">
+    <h3>RSVP</h3>
+    <span class="tag">Please respond</span>
+  </div>
+
+  <div class="rsvp-deadline">
+    <span>RSVP by <strong>15 September 2025</strong></span>
+  </div>
+
+  <p class="rsvp-intro">Please confirm your attendance so we can prepare for you.</p>
+
+  <ul class="checklist gold">
+    <li>Let us know if you’re bringing family (+1/+2 names)</li>
+    <li>Share any dietary needs</li>
+  </ul>
+
+  <div class="actions">
+    <a class="btn btn--primary" href="https://forms.gle/FSWUB224tigdqMZZA" target="_blank" rel="noopener">
+      Open RSVP Form
+    </a>
+    <a class="btn btn--ghost" href="https://forms.gle/FSWUB224tigdqMZZA" target="_blank" rel="noopener">
+      Edit my response
+    </a>
+  </div>
+
+  <p class="hint">This opens our Google RSVP form in a new tab.</p>
+</div>
+        <div class="card card--song">
+  <div class="card__header">
+    <h3>Request a Song</h3>
+    <span class="tag">DJ Playlist</span>
+  </div>
+
+  <p class="song-text">Tell our DJ a track that will get you dancing!</p>
+
+  <div class="chips">
+    <span class="chip">Afrobeats</span>
+    <span class="chip">Amapiano</span>
+    <span class="chip">Classic R&amp;B</span>
+    <span class="chip">Highlife</span>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn--primary" href="https://forms.gle/axmxKDjryQyJZECQ8" target="_blank" rel="noopener">
+      Suggest a Song
+    </a>
+    <a class="btn btn--ghost" href="https://forms.gle/axmxKDjryQyJZECQ8" target="_blank" rel="noopener">
+      Add another
+    </a>
+  </div>
+
+  <p class="hint">Requests close on <strong>30 Sept 2025</strong>. We’ll do our best to include your favourites!</p>
+</div>
+
+      </div>
+    </section>
+
+    <section id="calendar" class="section">
+      <div class="container grid-2">
+        <div class="card card--calendar">
+  <div class="card__header">
+    <h3>Add to Calendar</h3>
+    <span class="tag">One-click</span>
+  </div>
+
+  <!-- date/time badge to reinforce details -->
+  <div class="cal-badge" aria-label="Date & time">
+    <div class="cal-badge__date">
+      <b>Sat</b>
+      <span>04</span>
+      <small>Oct 2025</small>
+    </div>
+    <div class="cal-badge__time">
+      <b>5:00 PM</b>
+      <small>Golden Hall • Tallinn</small>
+    </div>
+  </div>
+
+  <p class="cal-intro">Add the reception to your calendar in one click.</p>
+
+  <div class="actions">
+    <a class="btn btn--primary"
+       href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Mary%20%26%20Chima%20Wedding%20Reception&dates=20251004T140000Z%2F20251004T200000Z&details=Join%20us%20as%20we%20celebrate%20the%20marriage%20of%20Mary%20%26%20Chima.%20An%20evening%20of%20love%2C%20laughter%2C%20dinner%2C%20and%20dancing.%20Formal%20attire%20requested%20with%20a%20touch%20of%20black%20or%20white.&location=Golden%20Hall%2C%20Raekoja%20plats%205%2C%20Tallinn%2C%20Estonia&ctz=Europe%2FTallinn"
+       target="_blank" rel="noopener">Add to Google Calendar</a>
+
+    <a class="btn btn--ghost" href="assets/mary-chima-wedding.ics" download>Download .ics</a>
+  </div>
+
+  <div class="qr-grid">
+    <figure class="qr-card">
+      <img src="assets/qr_google.png" alt="QR: Add to Google Calendar" />
+      <figcaption>Add to Google Calendar</figcaption>
+    </figure>
+
+    <figure class="qr-card">
+      <img src="assets/qr_ics.png" alt="QR: Download .ics file" />
+      <figcaption>Download .ics (this device)</figcaption>
+    </figure>
+  </div>
+
+</div>
+
+        <div class="card card--venue">
+  <div class="card__header">
+    <h3>Venue &amp; Getting There</h3>
+    <span class="tag">Old Town • Tallinn</span>
+  </div>
+
+  <p class="venue-text">
+    <strong>Golden Hall</strong>, Raekoja plats 5, in the heart of Tallinn Old Town.
+  </p>
+  <ul class="bullet gold">
+    <li>Arrive a little early to enjoy the square.</li>
+    <li>Ride-share drop-off: Raekoja plats (Town Hall Square).</li>
+  </ul>
+
+  <div class="map-embed">
+    <iframe
+      title="Golden Hall, Tallinn — map"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      src="https://www.google.com/maps?q=Raekoja%20plats%205%2C%20Tallinn%2C%20Estonia&output=embed">
+    </iframe>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn--primary" href="https://maps.google.com/?q=Raekoja%20plats%205%2C%20Tallinn%2C%20Estonia" target="_blank" rel="noopener">Open Map</a>
+    <a class="btn btn--ghost" href="https://maps.apple.com/?address=Raekoja%20plats%205,%20Tallinn,%20Estonia" target="_blank" rel="noopener">Open in Apple Maps</a>
+  </div>
+</div>
+
+      </div>
+    </section>
+
+    <section id="photos" class="section section--light">
+      <div class="container grid-2">
+        <div class="card card--photos">
+          <div class="card__header">
+            <h3>Share Your Photos</h3>
+            <span class="tag">Memories</span>
+          </div>
+          
+          <p class="photos-text">Help us capture every memory. Upload your favorite moments from the evening to our shared album.</p>
+          
+          <ul class="bullet gold">
+            <li>Share photos from the reception</li>
+            <li>Upload videos and candid moments</li>
+            <li>Help us remember this special day</li>
+          </ul>
+          
+          <div class="actions">
+            <a class="btn btn--primary" href="https://photos.app.goo.gl/TTaXWLuoMudM1zjL9" target="_blank" rel="noopener">
+              Open Shared Album
+            </a>
+            <a class="btn btn--ghost" href="https://photos.app.goo.gl/TTaXWLuoMudM1zjL9" target="_blank" rel="noopener">
+              View Gallery
+            </a>
+          </div>
+          
+          <p class="hint">Photos will be available during and after the celebration.</p>
+        </div>
+        <div class="card card--wishes">
+          <div class="card__header">
+            <h3>Leave Your Wishes</h3>
+            <span class="tag">Blessings</span>
+          </div>
+          
+          <p class="wishes-text">Share a blessing, prayer, or message for Mary &amp; Chima. We'll read these after the celebrations.</p>
+          
+          <div class="chips">
+            <span class="chip">Blessings</span>
+            <span class="chip">Prayers</span>
+            <span class="chip">Well Wishes</span>
+            <span class="chip">Advice</span>
+          </div>
+          
+          <div class="actions">
+            <a class="btn btn--primary" href="https://forms.gle/H5xM7q3yaSWY2xFp6" target="_blank" rel="noopener">
+              Send a Wish
+            </a>
+            <a class="btn btn--ghost" href="https://forms.gle/H5xM7q3yaSWY2xFp6" target="_blank" rel="noopener">
+              Add Another
+            </a>
+          </div>
+          
+          <p class="hint">Your heartfelt messages mean the world to us.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <img src="assets/monogram_favicon_mary_chima.png" alt="Mary &amp; Chima monogram" />
+      <p>Mary &amp; Chima • Tallinn • 4 Oct 2025</p>
+    </div>
+  </footer>
+
+  <!-- RSVP Modal -->
+  <div id="rsvp-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__header">
+        <h2 id="modal-title">RSVP for Our Wedding</h2>
+        <button class="modal__close" aria-label="Close RSVP form">&times;</button>
+      </div>
+      
+      <div class="modal__body">
+        <p class="modal__intro">We're so excited to celebrate with you! Please let us know if you can join us.</p>
+        
+        <form class="rsvp-form" id="rsvp-form">
+          <div class="form-group">
+            <label for="guest-name">Your Name *</label>
+            <input type="text" id="guest-name" name="name" required placeholder="Enter your full name">
+          </div>
+          
+          <div class="form-group">
+            <label for="guest-email">Email Address *</label>
+            <input type="email" id="guest-email" name="email" required placeholder="your.email@example.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="attendance">Will you be attending? *</label>
+            <select id="attendance" name="attendance" required>
+              <option value="">Please select...</option>
+              <option value="yes">Yes, I'll be there! 🎉</option>
+              <option value="no">Sorry, I can't make it 😔</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="guest-count-group" style="display: none;">
+            <label for="guest-count">Number of Guests (including yourself)</label>
+            <select id="guest-count" name="guest_count">
+              <option value="1">Just me</option>
+              <option value="2">2 people</option>
+              <option value="3">3 people</option>
+              <option value="4">4 people</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="guest-names-group" style="display: none;">
+            <label for="guest-names">Names of Additional Guests</label>
+            <textarea id="guest-names" name="guest_names" placeholder="Please list the names of your additional guests..." rows="3"></textarea>
+          </div>
+          
+          <div class="form-group" id="dietary-group" style="display: none;">
+            <label for="dietary">Dietary Requirements</label>
+            <textarea id="dietary" name="dietary" placeholder="Any allergies, dietary restrictions, or special requirements..." rows="3"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="message">Special Message for Mary & Chima</label>
+            <textarea id="message" name="message" placeholder="Share a blessing, wish, or special message..." rows="4"></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Submit RSVP 💕</button>
+            <button type="button" class="btn btn--ghost modal-close-btn">Cancel</button>
+          </div>
+        </form>
+        
+        <div class="rsvp-success" id="rsvp-success" style="display: none;">
+          <div class="success-icon">🎉</div>
+          <h3>Thank You!</h3>
+          <p>Your RSVP has been received. We can't wait to celebrate with you!</p>
+          <button class="btn btn--primary modal-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

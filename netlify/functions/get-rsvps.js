@@ -1,0 +1,120 @@
+const { neon } = require('@netlify/neon');
+
+exports.handler = async (event, context) => {
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: '',
+    };
+  }
+
+  // Only allow GET requests
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' }),
+    };
+  }
+
+  try {
+    // Basic authentication check (optional - you can add a simple password)
+    const authHeader = event.headers.authorization;
+    const expectedAuth = process.env.ADMIN_PASSWORD; // Set this in Netlify env vars
+    
+    if (expectedAuth && (!authHeader || authHeader !== `Bearer ${expectedAuth}`)) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      };
+    }
+
+    // Initialize Neon connection
+    const sql = neon();
+
+    // Get query parameters for filtering
+    const { attendance, limit = '50', offset = '0' } = event.queryStringParameters || {};
+
+    let query;
+    let countQuery;
+
+    if (attendance && (attendance === 'yes' || attendance === 'no')) {
+      // Filter by attendance
+      query = sql`
+        SELECT 
+          id, name, email, attendance, guest_count, 
+          guest_names, dietary_requirements, special_message,
+          created_at, updated_at
+        FROM rsvps 
+        WHERE attendance = ${attendance}
+        ORDER BY created_at DESC 
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `;
+      
+      countQuery = sql`SELECT COUNT(*) as total FROM rsvps WHERE attendance = ${attendance}`;
+    } else {
+      // Get all RSVPs
+      query = sql`
+        SELECT 
+          id, name, email, attendance, guest_count,
+          guest_names, dietary_requirements, special_message,
+          created_at, updated_at
+        FROM rsvps 
+        ORDER BY created_at DESC 
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `;
+      
+      countQuery = sql`SELECT COUNT(*) as total FROM rsvps`;
+    }
+
+    const [rsvps, countResult] = await Promise.all([query, countQuery]);
+
+    // Get summary statistics
+    const stats = await sql`
+      SELECT 
+        COUNT(*) as total_responses,
+        COUNT(*) FILTER (WHERE attendance = 'yes') as attending,
+        COUNT(*) FILTER (WHERE attendance = 'no') as not_attending,
+        SUM(guest_count) FILTER (WHERE attendance = 'yes') as total_guests
+      FROM rsvps
+    `;
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        data: rsvps,
+        pagination: {
+          total: parseInt(countResult[0].total),
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          hasMore: parseInt(offset) + rsvps.length < parseInt(countResult[0].total)
+        },
+        statistics: stats[0]
+      }),
+    };
+
+  } catch (error) {
+    console.error('Database error:', error);
+    
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'Internal server error. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }),
+    };
+  }
+};
