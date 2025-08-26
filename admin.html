@@ -238,6 +238,11 @@
       opacity: 0.8;
       transform: translateY(-1px);
     }
+    .btn.active {
+      background: #c8a951 !important;
+      color: white !important;
+      box-shadow: 0 2px 8px rgba(200, 169, 81, 0.3);
+    }
     .rsvp-list {
       background: white;
       border-radius: 12px;
@@ -457,6 +462,7 @@
         <button class="btn btn-secondary" onclick="filterGuests('dietary')">With Dietary Needs</button>
         <button class="btn btn-secondary" onclick="filterGuests('all')">All Guests</button>
         <button class="btn btn-success" onclick="exportData('guests')">📊 Export Guests</button>
+        <button class="btn btn-warning" onclick="migrateIndividualGuests()">🔄 Migrate Guest Records</button>
       </div>
 
       <div id="guests-error-container"></div>
@@ -1144,19 +1150,85 @@
         
         if (result.success) {
           // Update stats
-          document.getElementById('total-individuals').textContent = result.data.length;
-          document.getElementById('primary-guests').textContent = result.data.filter(g => g.is_primary).length;
-          document.getElementById('additional-guests').textContent = result.data.filter(g => !g.is_primary).length;
-          document.getElementById('dietary-requirements').textContent = result.data.filter(g => g.dietary_needs && g.dietary_needs.trim()).length;
+          document.getElementById('total-individuals').textContent = result.statistics?.total_individuals || result.data.length;
+          document.getElementById('primary-guests').textContent = result.statistics?.primary_guests || result.data.filter(g => g.is_primary).length;
+          document.getElementById('additional-guests').textContent = result.statistics?.additional_guests || result.data.filter(g => !g.is_primary).length;
+          document.getElementById('dietary-requirements').textContent = result.statistics?.dietary_requirements || result.data.filter(g => g.dietary_needs && g.dietary_needs.trim()).length;
           
           // Display guests list
           displayGuests(result.data);
         } else {
-          document.getElementById('guests-list').innerHTML = '<div class="error">Error loading guests</div>';
+          document.getElementById('guests-list').innerHTML = `
+            <div class="error">
+              <h4>❌ Error Loading Individual Guests</h4>
+              <p>${result.error || 'Unknown error occurred'}</p>
+              <button onclick="migrateIndividualGuests()" class="btn btn-warning">🔄 Run Migration</button>
+              <button onclick="loadIndividualGuests()" class="btn btn-primary">🔄 Retry</button>
+            </div>
+          `;
         }
       } catch (error) {
         console.error('Error loading guests:', error);
-        document.getElementById('guests-list').innerHTML = '<div class="error">Error loading guests</div>';
+        document.getElementById('guests-list').innerHTML = `
+          <div class="error">
+            <h4>❌ Network Error</h4>
+            <p>Failed to load individual guests: ${error.message}</p>
+            <button onclick="migrateIndividualGuests()" class="btn btn-warning">🔄 Run Migration</button>
+            <button onclick="loadIndividualGuests()" class="btn btn-primary">🔄 Retry</button>
+          </div>
+        `;
+      }
+    }
+
+    async function migrateIndividualGuests() {
+      if (!requireAuth()) return;
+      
+      if (!confirm('This will create individual guest records from existing RSVPs. This is safe to run multiple times. Continue?')) {
+        return;
+      }
+      
+      try {
+        // Show loading state
+        document.getElementById('guests-list').innerHTML = '<div class="loading">🔄 Running migration... Please wait.</div>';
+        
+        const response = await fetch('/.netlify/functions/migrate-individual-guests', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(`✅ Migration completed successfully!\n\n` +
+                `RSVPs processed: ${result.statistics.rsvps_processed}\n` +
+                `RSVPs migrated: ${result.statistics.rsvps_migrated}\n` +
+                `RSVPs skipped: ${result.statistics.rsvps_skipped}\n\n` +
+                `Total individual guests: ${result.statistics.total_individual_guests}\n` +
+                `Primary guests: ${result.statistics.primary_guests}\n` +
+                `Additional guests: ${result.statistics.additional_guests}`);
+          
+          // Reload the guests list
+          loadIndividualGuests();
+        } else {
+          alert(`❌ Migration failed: ${result.error}`);
+          document.getElementById('guests-list').innerHTML = `
+            <div class="error">
+              <h4>❌ Migration Failed</h4>
+              <p>${result.error}</p>
+              <button onclick="migrateIndividualGuests()" class="btn btn-warning">🔄 Retry Migration</button>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Migration error:', error);
+        alert(`❌ Migration failed: ${error.message}`);
+        document.getElementById('guests-list').innerHTML = `
+          <div class="error">
+            <h4>❌ Migration Error</h4>
+            <p>${error.message}</p>
+            <button onclick="migrateIndividualGuests()" class="btn btn-warning">🔄 Retry Migration</button>
+          </div>
+        `;
       }
     }
 
@@ -1170,13 +1242,47 @@
       container.innerHTML = guests.map(guest => `
         <div class="rsvp-item">
           <div class="rsvp-details">
-            <h3>${guest.guest_name} ${guest.is_primary ? '(Primary)' : ''}</h3>
-            <p><strong>Dietary Needs:</strong> ${guest.dietary_needs || 'None'}</p>
-            <p><strong>Table:</strong> ${guest.table_number || 'Unassigned'}</p>
+            <h3>${guest.guest_name} ${guest.is_primary ? '(Primary Guest)' : '(Additional Guest)'}</h3>
+            <p><strong>RSVP by:</strong> ${guest.rsvp_name || 'Unknown'} (${guest.rsvp_email || 'No email'})</p>
+            <p><strong>Attendance Status:</strong> <span class="attendance-badge ${guest.attendance}">${guest.attendance === 'yes' ? 'Attending' : 'Not Attending'}</span></p>
+            <p><strong>Dietary Requirements:</strong> ${guest.dietary_needs || 'None specified'}</p>
+            <p><strong>Table Assignment:</strong> ${guest.table_number ? `Table ${guest.table_number}` : 'Unassigned'}</p>
             <p><strong>RSVP ID:</strong> ${guest.rsvp_id}</p>
+            <p><strong>Guest Type:</strong> ${guest.is_primary ? 'Primary Contact' : 'Additional Guest'}</p>
           </div>
         </div>
       `).join('');
+    }
+
+    async function filterGuests(filterType) {
+      if (!requireAuth()) return;
+      
+      try {
+        let url = '/.netlify/functions/get-individual-guests';
+        if (filterType && filterType !== 'all') {
+          url += `?filter_type=${filterType}`;
+        }
+        
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          displayGuests(result.data);
+          
+          // Update filter buttons
+          document.querySelectorAll('#guests-content .controls .btn-secondary').forEach(btn => {
+            btn.classList.remove('active');
+          });
+          event.target.classList.add('active');
+        } else {
+          document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
+        }
+      } catch (error) {
+        console.error('Error filtering guests:', error);
+        document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
+      }
     }
 
     async function loadTableData() {
