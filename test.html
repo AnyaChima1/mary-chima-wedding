@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page - Mary & Chima Wedding</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .test-link {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 10px 10px 0;
+        }
+        .test-link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎉 Deployment Test - Mary & Chima Wedding Site</h1>
+    
+    <div class="success">
+        ✅ <strong>Success!</strong> If you can see this page, your Netlify deployment is working correctly.
+    </div>
+    
+    <div class="info">
+        <strong>Next Steps:</strong>
+        <ol>
+            <li>Test the main website by clicking the link below</li>
+            <li>Check that all functions are working</li>
+            <li>Verify the admin panel access</li>
+        </ol>
+    </div>
+    
+    <h2>🔗 Quick Links</h2>
+    <a href="/index.html" class="test-link">🏠 Main Website</a>
+    <a href="/admin.html" class="test-link">👥 Admin Panel</a>
+    <a href="/" class="test-link">🏡 Home (Root)</a>
+    
+    <h2>📊 Function Tests</h2>
+    <button onclick="testFunction('get-rsvps')" class="test-link">Test RSVP Function</button>
+    <button onclick="testFunction('get-photos')" class="test-link">Test Photos Function</button>
+    
+    <div id="test-results"></div>
+    
+    <script>
+        async function testFunction(functionName) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Testing function: ' + functionName + '...</p>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/' + functionName);
+                const result = await response.text();
+                
+                resultsDiv.innerHTML = `
+                    <div class="info">
+                        <strong>Function Test Result for ${functionName}:</strong><br>
+                        Status: ${response.status}<br>
+                        Response: ${result.substring(0, 200)}...
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                        <strong>Function Test Failed:</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Test page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Test page loaded successfully');
+            console.log('📍 Current URL:', window.location.href);
+            console.log('🌐 Host:', window.location.host);
+        });
+    </script>
+</body>
+</html>
