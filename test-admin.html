@@ -57,6 +57,13 @@
     </div>
     
     <div class="test-section">
+        <h2>Test 6: Delete Functionality</h2>
+        <p>This tests if the delete entries function works properly.</p>
+        <button onclick="testDeleteFunction()">🗑️ Test Delete Function</button>
+        <div id="delete-test-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
         <h2>Test 5: Multi-Select and Notifications</h2>
         <p>This tests if the admin dashboard multi-select and notification features work.</p>
         <button onclick="testAdminFeatures()">🔧 Test Admin Features</button>
@@ -237,6 +244,53 @@
                 btn.disabled = false;
             }
         }
+        async function testDeleteFunction() {
+            const resultDiv = document.getElementById('delete-test-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            try {
+                // Test 1: Check if delete-entries function exists
+                const deleteResponse = await fetch('/.netlify/functions/delete-entries', {
+                    method: 'OPTIONS'
+                });
+                
+                // Test 2: Try a validation test (should return 400 for missing data)
+                const validationResponse = await fetch('/.netlify/functions/delete-entries', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const validationResult = await validationResponse.json();
+                
+                if (deleteResponse.ok && validationResponse.status === 400) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Delete Function Working</h4>
+                        <p><strong>Endpoint:</strong> ✅ Available</p>
+                        <p><strong>Validation:</strong> ✅ Properly validates requests</p>
+                        <p><strong>Error Message:</strong> ${validationResult.error}</p>
+                        <p><strong>Status:</strong> Delete functionality should work in admin dashboard</p>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>⚠️ Delete Function Issues</h4>
+                        <p><strong>Endpoint Status:</strong> ${deleteResponse.status}</p>
+                        <p><strong>Validation Status:</strong> ${validationResponse.status}</p>
+                        <p><strong>Expected 400 for validation, got:</strong> ${validationResponse.status}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
         async function testAdminFeatures() {
             const resultDiv = document.getElementById('admin-features-result');
             resultDiv.style.display = 'block';

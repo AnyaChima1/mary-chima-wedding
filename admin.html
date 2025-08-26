@@ -783,9 +783,21 @@
         alert('Please select items to delete.');
         return;
       }
-      if (!confirm(`Delete ${selectedItems[type].length} entries?`)) return;
+      
+      const itemCount = selectedItems[type].length;
+      if (!confirm(`Are you sure you want to delete ${itemCount} ${type} entries? This cannot be undone.`)) {
+        return;
+      }
+
+      // Show loading state
+      const deleteBtn = document.getElementById(`delete-${type}-btn`);
+      const originalText = deleteBtn.textContent;
+      deleteBtn.textContent = `🗑️ Deleting ${itemCount} items...`;
+      deleteBtn.disabled = true;
 
       try {
+        console.log('Deleting entries:', { type, ids: selectedItems[type] });
+        
         const response = await fetch('/.netlify/functions/delete-entries', {
           method: 'DELETE',
           headers: {
@@ -795,13 +807,46 @@
           body: JSON.stringify({ type: type, ids: selectedItems[type] })
         });
         
+        console.log('Delete response status:', response.status);
         const result = await response.json();
-        if (result.success) {
-          alert(`Deleted ${result.deletedCount} entries.`);
-          location.reload(); // Simple refresh
+        console.log('Delete response:', result);
+        
+        if (response.ok && result.success) {
+          // Success feedback
+          alert(`✅ Successfully deleted ${result.deletedCount} ${type} entries!`);
+          
+          // Reset multi-select state
+          selectedItems[type] = [];
+          multiSelectMode[type] = false;
+          deleteBtn.style.display = 'none';
+          
+          // Reload the current data
+          if (type === 'rsvps') {
+            loadRSVPs();
+          } else if (type === 'songs') {
+            loadSongs();
+          } else if (type === 'photos') {
+            loadPhotos();
+          } else if (type === 'wishes') {
+            loadWishes();
+          }
+          
+        } else {
+          // Handle API error responses
+          const errorMsg = result.error || 'Unknown error occurred';
+          console.error('Delete API Error:', result);
+          alert(`❌ Failed to delete entries: ${errorMsg}`);
         }
+        
       } catch (error) {
-        alert('Error deleting entries.');
+        // Handle network errors
+        console.error('Delete Network Error:', error);
+        alert(`❌ Network error while deleting entries: ${error.message}`);
+        
+      } finally {
+        // Reset button state
+        deleteBtn.textContent = originalText;
+        deleteBtn.disabled = false;
       }
     }
 

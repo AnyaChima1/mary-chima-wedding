@@ -27,15 +27,24 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Basic authentication check
+    // Authentication check - allow access if ADMIN_PASSWORD not set (for debugging)
     const authHeader = event.headers.authorization;
-    const expectedAuth = process.env.ADMIN_PASSWORD || 'Mary&Chima0003';
+    const expectedAuth = process.env.ADMIN_PASSWORD;
+    
+    console.log('DELETE AUTH CHECK:', {
+      hasAuthHeader: !!authHeader,
+      hasExpectedAuth: !!expectedAuth,
+      authHeaderLength: authHeader ? authHeader.length : 0
+    });
     
     if (expectedAuth && (!authHeader || authHeader !== `Bearer ${expectedAuth}`)) {
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ 
+          error: 'Unauthorized',
+          hint: !expectedAuth ? 'ADMIN_PASSWORD environment variable not set' : 'Invalid authorization'
+        }),
       };
     }
 
@@ -85,13 +94,54 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Delete entries
-    for (const id of ids) {
-      const result = await sql`
-        DELETE FROM ${sql(tableName)} 
-        WHERE id = ${parseInt(id)}
-      `;
-      if (result.count > 0) deletedCount++;
+    console.log('DELETE REQUEST:', {
+      type,
+      tableName,
+      idsToDelete: ids,
+      requestId: Date.now()
+    });
+
+    // Delete entries using proper SQL template literals
+    try {
+      if (tableName === 'rsvps') {
+        // Delete individual guests first (due to foreign key constraint)
+        await sql`DELETE FROM individual_guests WHERE rsvp_id = ANY(${ids})`;
+        
+        // Then delete RSVPs
+        const result = await sql`DELETE FROM rsvps WHERE id = ANY(${ids})`;
+        deletedCount = result.count;
+      } else if (tableName === 'song_requests') {
+        const result = await sql`DELETE FROM song_requests WHERE id = ANY(${ids})`;
+        deletedCount = result.count;
+      } else if (tableName === 'photo_shares') {
+        const result = await sql`DELETE FROM photo_shares WHERE id = ANY(${ids})`;
+        deletedCount = result.count;
+      } else if (tableName === 'wishes') {
+        const result = await sql`DELETE FROM wishes WHERE id = ANY(${ids})`;
+        deletedCount = result.count;
+      }
+      
+      console.log('DELETE SUCCESS:', {
+        tableName,
+        deletedCount,
+        requestedCount: ids.length
+      });
+      
+    } catch (deleteError) {
+      console.error('DELETE OPERATION ERROR:', {
+        tableName,
+        error: deleteError.message,
+        ids
+      });
+      
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Failed to delete entries from database',
+          details: process.env.NODE_ENV === 'development' ? deleteError.message : undefined
+        }),
+      };
     }
 
     return {
@@ -105,14 +155,25 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Delete error:', error);
+    console.error('DELETE FUNCTION ERROR:', {
+      message: error.message,
+      stack: error.stack,
+      type: error.constructor.name,
+      code: error.code,
+      requestData: { type: data?.type, idsCount: data?.ids?.length },
+      timestamp: new Date().toISOString()
+    });
     
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Internal server error. Please try again later.',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: 'Internal server error during delete operation.',
+        timestamp: new Date().toISOString(),
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          type: error.constructor.name
+        } : undefined
       }),
     };
   }
