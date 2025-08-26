@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Test - Mary & Chima Wedding</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .logs {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #dee2e6;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Database Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Database Connection Test</h2>
+        <p>Test basic database connectivity and table structure.</p>
+        <button class="test-btn" onclick="testDatabase()">🔍 Test Database Connection</button>
+        <div id="db-test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. URL Photo Submission Test</h2>
+        <p>Test the submit-photo function with a URL.</p>
+        <form id="url-test-form">
+            <div class="form-group">
+                <label for="url-name">Name:</label>
+                <input type="text" id="url-name" value="Test User URL" required>
+            </div>
+            <div class="form-group">
+                <label for="url-email">Email:</label>
+                <input type="email" id="url-email" value="testurl@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="url-photo">Photo URL:</label>
+                <input type="url" id="url-photo" value="https://picsum.photos/800/600" required>
+            </div>
+            <div class="form-group">
+                <label for="url-description">Description:</label>
+                <textarea id="url-description">Test URL photo submission</textarea>
+            </div>
+            <div class="form-group">
+                <label for="url-category">Category:</label>
+                <select id="url-category">
+                    <option value="test">Test</option>
+                    <option value="ceremony">Ceremony</option>
+                    <option value="reception">Reception</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <button type="submit" class="test-btn">📸 Test URL Submission</button>
+        </form>
+        <div id="url-test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. File Upload Test</h2>
+        <p>Test the upload-photo function with a small base64 image.</p>
+        <form id="file-test-form">
+            <div class="form-group">
+                <label for="file-name">Name:</label>
+                <input type="text" id="file-name" value="Test User File" required>
+            </div>
+            <div class="form-group">
+                <label for="file-email">Email:</label>
+                <input type="email" id="file-email" value="testfile@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="file-description">Description:</label>
+                <textarea id="file-description">Test file upload submission</textarea>
+            </div>
+            <div class="form-group">
+                <label for="file-category">Category:</label>
+                <select id="file-category">
+                    <option value="test">Test</option>
+                    <option value="ceremony">Ceremony</option>
+                    <option value="reception">Reception</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <button type="submit" class="test-btn">📁 Test File Upload</button>
+        </form>
+        <div id="file-test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Debug Logs</h2>
+        <button class="test-btn" onclick="clearLogs()">🗑️ Clear Logs</button>
+        <div id="debug-logs" class="logs">Click any test button to see detailed logs...\n</div>
+    </div>
+
+    <script>
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            const logs = document.getElementById('debug-logs');
+            logs.textContent += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('debug-logs').textContent = 'Logs cleared...\n';
+        }
+
+        function showResult(elementId, success, data) {
+            const element = document.getElementById(elementId);
+            if (success) {
+                element.innerHTML = `<div class="success">✅ Success: ${JSON.stringify(data, null, 2)}</div>`;
+            } else {
+                element.innerHTML = `<div class="error">❌ Error: ${JSON.stringify(data, null, 2)}</div>`;
+            }
+        }
+
+        async function testDatabase() {
+            log('Starting database connection test...');
+            try {
+                const response = await fetch('/.netlify/functions/test-db', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                log(`Database test response: ${response.status}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Database test successful');
+                    showResult('db-test-result', true, result);
+                } else {
+                    log('❌ Database test failed');
+                    showResult('db-test-result', false, result);
+                }
+            } catch (error) {
+                log(`❌ Database test error: ${error.message}`);
+                showResult('db-test-result', false, { error: error.message });
+            }
+        }
+
+        document.getElementById('url-test-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            log('Starting URL photo submission test...');
+            
+            const formData = {
+                name: document.getElementById('url-name').value,
+                email: document.getElementById('url-email').value,
+                photo_url: document.getElementById('url-photo').value,
+                description: document.getElementById('url-description').value,
+                category: document.getElementById('url-category').value
+            };
+            
+            log(`URL test data: ${JSON.stringify(formData)}`);
+            
+            try {
+                const response = await fetch('/.netlify/functions/submit-photo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                log(`URL submission response: ${response.status}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('✅ URL submission successful');
+                    showResult('url-test-result', true, result);
+                } else {
+                    log('❌ URL submission failed');
+                    showResult('url-test-result', false, result);
+                }
+            } catch (error) {
+                log(`❌ URL submission error: ${error.message}`);
+                showResult('url-test-result', false, { error: error.message });
+            }
+        });
+
+        document.getElementById('file-test-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            log('Starting file upload test...');
+            
+            // Small test image (1x1 pixel red PNG in base64)
+            const testImageBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+            
+            const formData = {
+                name: document.getElementById('file-name').value,
+                email: document.getElementById('file-email').value,
+                description: document.getElementById('file-description').value,
+                category: document.getElementById('file-category').value,
+                file_data: testImageBase64,
+                filename: 'test_image.png',
+                file_type: 'image/png'
+            };
+            
+            log(`File test data size: ${JSON.stringify(formData).length} chars`);
+            
+            try {
+                const response = await fetch('/.netlify/functions/upload-photo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                log(`File upload response: ${response.status}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('✅ File upload successful');
+                    showResult('file-test-result', true, result);
+                } else {
+                    log('❌ File upload failed');
+                    showResult('file-test-result', false, result);
+                }
+            } catch (error) {
+                log(`❌ File upload error: ${error.message}`);
+                showResult('file-test-result', false, { error: error.message });
+            }
+        });
+
+        log('Database test page loaded. Ready to test!');
+    </script>
+</body>
+</html>

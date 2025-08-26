@@ -168,8 +168,7 @@ exports.handler = async (event, context) => {
       requestId,
       hasNetlifyUrl: !!process.env.NETLIFY_DATABASE_URL,
       hasDatabaseUrl: !!process.env.DATABASE_URL,
-      urlLength: databaseUrl?.length,
-      urlStart: databaseUrl?.substring(0, 20) + '...' || 'N/A'
+      urlLength: databaseUrl?.length
     });
     
     if (!databaseUrl) {
@@ -189,25 +188,20 @@ exports.handler = async (event, context) => {
       logDebug('INITIALIZING_NEON', { requestId });
       sql = neon(databaseUrl);
       logDebug('NEON_INITIALIZED', { requestId });
-      
-      // Test database connection with a simple query
-      logDebug('TESTING_CONNECTION', { requestId });
-      await sql`SELECT 1 as test`;
-      logDebug('CONNECTION_TEST_SUCCESS', { requestId });
     } catch (error) {
-      logError('NEON_INIT_ERROR', error, { requestId, databaseUrlLength: databaseUrl?.length });
+      logError('NEON_INIT_ERROR', error, { requestId });
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
-          error: 'Database connection failed', 
+          error: 'Database initialization failed', 
           requestId,
           details: process.env.NODE_ENV === 'development' ? error.message : undefined
         }),
       };
     }
 
-    // Create table if it doesn't exist (with support for both URL and file data)
+    // Create table if it doesn't exist
     try {
       logDebug('CREATING_TABLE', { requestId });
       await sql`
@@ -225,13 +219,13 @@ exports.handler = async (event, context) => {
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `;
-      logDebug('TABLE_CREATED', { requestId });
+      logDebug('TABLE_READY', { requestId });
     } catch (error) {
       logError('TABLE_CREATION_ERROR', error, { requestId });
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Database table creation failed', requestId }),
+        body: JSON.stringify({ error: 'Database table setup failed', requestId }),
       };
     }
 
@@ -245,7 +239,7 @@ exports.handler = async (event, context) => {
       category: data.category || 'other'
     });
 
-    // Insert new photo share
+    // Insert new photo share (simplified)
     let result;
     try {
       result = await sql`
@@ -278,9 +272,10 @@ exports.handler = async (event, context) => {
     } catch (error) {
       logError('INSERT_ERROR', error, {
         requestId,
-        sqlError: error.message,
-        code: error.code,
-        constraint: error.constraint
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorDetail: error.detail,
+        errorHint: error.hint
       });
       return {
         statusCode: 500,
@@ -288,7 +283,11 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ 
           error: 'Database insert failed', 
           requestId,
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          details: process.env.NODE_ENV === 'development' ? {
+            message: error.message,
+            code: error.code,
+            detail: error.detail
+          } : undefined
         }),
       };
     }
