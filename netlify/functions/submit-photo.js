@@ -189,12 +189,21 @@ exports.handler = async (event, context) => {
       logDebug('INITIALIZING_NEON', { requestId });
       sql = neon(databaseUrl);
       logDebug('NEON_INITIALIZED', { requestId });
+      
+      // Test database connection with a simple query
+      logDebug('TESTING_CONNECTION', { requestId });
+      await sql`SELECT 1 as test`;
+      logDebug('CONNECTION_TEST_SUCCESS', { requestId });
     } catch (error) {
-      logError('NEON_INIT_ERROR', error, { requestId });
+      logError('NEON_INIT_ERROR', error, { requestId, databaseUrlLength: databaseUrl?.length });
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Database initialization failed', requestId }),
+        body: JSON.stringify({ 
+          error: 'Database connection failed', 
+          requestId,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        }),
       };
     }
 

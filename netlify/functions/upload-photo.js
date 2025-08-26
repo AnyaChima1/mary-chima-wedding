@@ -42,6 +42,7 @@ exports.handler = async (event, context) => {
 
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
+    logDebug('PREFLIGHT_REQUEST', { requestId });
     return {
       statusCode: 200,
       headers,
@@ -51,23 +52,52 @@ exports.handler = async (event, context) => {
 
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
+    logDebug('INVALID_METHOD', { requestId, method: event.httpMethod });
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
+      body: JSON.stringify({ error: 'Method not allowed', requestId }),
     };
   }
 
+  // Add timeout handling
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Function timeout - file too large or processing too slow')), 25000); // 25 second timeout
+  });
+  
+  const processRequest = async () => {
   try {
-    // Parse request body
+    // Parse request body with size checking
     let data;
     try {
+      logDebug('PARSING_BODY', { requestId, bodyLength: event.body?.length });
+      
+      // Check request size before parsing (roughly 6MB limit for base64)
+      const maxRequestSize = 6 * 1024 * 1024; // 6MB
+      if (event.body && event.body.length > maxRequestSize) {
+        logError('REQUEST_TOO_LARGE', new Error('Request body too large'), {
+          requestId,
+          actualSize: event.body.length,
+          maxSize: maxRequestSize
+        });
+        return {
+          statusCode: 413,
+          headers,
+          body: JSON.stringify({ 
+            error: 'File too large. Please use files smaller than 5MB or try the URL sharing method.',
+            requestId
+          }),
+        };
+      }
+      
       data = JSON.parse(event.body);
+      logDebug('BODY_PARSED', { requestId, keys: Object.keys(data) });
     } catch (error) {
+      logError('JSON_PARSE_ERROR', error, { requestId, body: event.body?.substring(0, 200) });
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Invalid JSON in request body' }),
+        body: JSON.stringify({ error: 'Invalid JSON in request body', requestId }),
       };
     }
 
@@ -193,101 +223,160 @@ exports.handler = async (event, context) => {
     // In a production environment, you'd upload to a storage service like Cloudinary, AWS S3, etc.
     // and store the resulting URL in the database
     
-    // Initialize Neon connection
+    // Initialize Neon connection with timeout
     const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+    logDebug('DATABASE_CONFIG', {
+      requestId,
+      hasNetlifyUrl: !!process.env.NETLIFY_DATABASE_URL,
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      urlLength: databaseUrl?.length
+    });
+    
     if (!databaseUrl) {
+      logError('NO_DATABASE_URL', new Error('Database URL not found'), { requestId });
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Database connection not configured' }),
+        body: JSON.stringify({ error: 'Database connection not configured', requestId }),
       };
     }
     
-    const sql = neon(databaseUrl);
-    
-    // Test database connection
+    let sql;
     try {
-      await sql`SELECT 1 as test`;
+      logDebug('INITIALIZING_NEON', { requestId });
+      sql = neon(databaseUrl);
+      
+      // Test database connection with timeout
+      logDebug('TESTING_CONNECTION', { requestId });
+      await Promise.race([
+        sql`SELECT 1 as test`,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout')), 5000))
+      ]);
+      logDebug('CONNECTION_SUCCESS', { requestId });
     } catch (dbError) {
+      logError('DATABASE_CONNECTION_ERROR', dbError, { requestId });
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Database connection failed' }),
+        body: JSON.stringify({ error: 'Database connection failed', requestId }),
       };
     }
 
-    // Create table if it doesn't exist (with support for base64 data)
-    await sql`
-      CREATE TABLE IF NOT EXISTS photo_shares (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        photo_url TEXT NOT NULL,
-        description TEXT,
-        category VARCHAR(100) DEFAULT 'other',
-        file_data TEXT,
-        filename VARCHAR(500),
-        file_type VARCHAR(100),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      )
-    `;
+    // Create table if it doesn't exist (optimized for large data)
+    try {
+      logDebug('CREATING_TABLE', { requestId });
+      await sql`
+        CREATE TABLE IF NOT EXISTS photo_shares (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          photo_url TEXT NOT NULL,
+          description TEXT,
+          category VARCHAR(100) DEFAULT 'other',
+          file_data TEXT,
+          filename VARCHAR(500),
+          file_type VARCHAR(100),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `;
+      logDebug('TABLE_READY', { requestId });
+    } catch (error) {
+      logError('TABLE_CREATION_ERROR', error, { requestId });
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Database table setup failed', requestId }),
+      };
+    }
 
     const currentTime = new Date().toISOString();
+    
+    // Optimize data URL creation (don't store full base64 in photo_url for large files)
+    let photoUrl;
+    let fileData;
+    
+    if (fileSizeBytes > 1 * 1024 * 1024) { // If larger than 1MB, store differently
+      photoUrl = `data:${file_type};base64,${base64Data.substring(0, 100)}...`; // Store truncated version in URL
+      fileData = base64Data; // Store full data separately
+      logDebug('LARGE_FILE_HANDLING', { requestId, fileSize: fileSizeBytes, approach: 'separated' });
+    } else {
+      photoUrl = `data:${file_type};base64,${base64Data}`;
+      fileData = base64Data;
+      logDebug('SMALL_FILE_HANDLING', { requestId, fileSize: fileSizeBytes, approach: 'combined' });
+    }
 
-    // For direct storage, we'll use a data URL as the photo_url
-    const dataUrl = `data:${file_type};base64,${base64Data}`;
+    // Insert with transaction and timeout
+    let result;
+    try {
+      logDebug('INSERTING_DATA', { requestId, dataSize: fileData.length });
+      
+      result = await Promise.race([
+        sql`
+          INSERT INTO photo_shares (
+            name, 
+            email, 
+            photo_url, 
+            description, 
+            category,
+            file_data,
+            filename,
+            file_type,
+            created_at,
+            updated_at
+          ) VALUES (
+            ${name},
+            ${email},
+            ${photoUrl},
+            ${data.description || ''},
+            ${data.category || 'other'},
+            ${fileData},
+            ${filename},
+            ${file_type},
+            ${currentTime},
+            ${currentTime}
+          )
+          RETURNING id, name, filename, category
+        `,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Database insert timeout')), 10000))
+      ]);
+      
+      logDebug('INSERT_SUCCESS', { requestId, insertedId: result[0]?.id });
+    } catch (error) {
+      logError('INSERT_ERROR', error, { requestId, dataSize: fileData?.length });
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Failed to save photo. Please try a smaller file or use URL sharing.', 
+          requestId
+        }),
+      };
+    }
 
-    // Insert new photo share with file data
-    const result = await sql`
-      INSERT INTO photo_shares (
-        name, 
-        email, 
-        photo_url, 
-        description, 
-        category,
-        file_data,
-        filename,
-        file_type,
-        created_at,
-        updated_at
-      ) VALUES (
-        ${name},
-        ${email},
-        ${dataUrl},
-        ${data.description || ''},
-        ${data.category || 'other'},
-        ${base64Data},
-        ${filename},
-        ${file_type},
-        ${currentTime},
-        ${currentTime}
-      )
-      RETURNING id, name, filename, category
-    `;
-
+    logDebug('SUCCESS', { requestId, result: result[0] });
     return {
       statusCode: 201,
       headers,
       body: JSON.stringify({
         success: true,
         message: 'Photo uploaded successfully!',
-        data: result[0]
+        data: result[0],
+        requestId
       }),
     };
 
   } catch (error) {
-    console.error('Upload error details:', {
-      message: error.message,
-      stack: error.stack,
+    logError('UPLOAD_ERROR', error, {
+      requestId,
       requestSize: event.body?.length || 0,
       hasData: !!data,
       dataKeys: data ? Object.keys(data) : [],
-      timestamp: new Date().toISOString()
+      stage: 'main_processing'
     });
 
     // Provide specific error messages based on error type
-    let userMessage = 'Internal server error. Please try again later.';
+    let userMessage = 'Upload failed. Please try again or use URL sharing.';
     let statusCode = 500;
     
     if (error.message.includes('Invalid JSON')) {
@@ -297,10 +386,13 @@ exports.handler = async (event, context) => {
       userMessage = 'Database connection issue. Please try again in a moment.';
       statusCode = 503;
     } else if (error.message.includes('timeout')) {
-      userMessage = 'Upload timed out. Please try with a smaller file or check your connection.';
+      userMessage = 'Upload timed out. Please try with a smaller file.';
       statusCode = 408;
     } else if (error.message.includes('file size') || error.message.includes('size exceeds')) {
-      userMessage = 'File size exceeds 10MB limit. Please use a smaller file.';
+      userMessage = 'File size exceeds limits. Please use a smaller file.';
+      statusCode = 413;
+    } else if (error.message.includes('memory') || error.message.includes('heap')) {
+      userMessage = 'File too large for processing. Please use URL sharing instead.';
       statusCode = 413;
     }
 
@@ -309,10 +401,40 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: userMessage,
+        requestId,
         details: process.env.NODE_ENV === 'development' ? {
           originalError: error.message,
           requestSize: event.body?.length || 0
         } : undefined
+      }),
+    };
+  }
+  }; // End processRequest function
+  
+  // Execute with timeout protection
+  try {
+    return await Promise.race([processRequest(), timeoutPromise]);
+  } catch (error) {
+    logError('FUNCTION_TIMEOUT_OR_ERROR', error, { requestId });
+    
+    if (error.message.includes('timeout')) {
+      return {
+        statusCode: 408,
+        headers,
+        body: JSON.stringify({
+          error: 'Upload timed out. File may be too large. Please try a smaller file or use URL sharing.',
+          requestId
+        }),
+      };
+    }
+    
+    // Other unexpected errors
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'Unexpected server error. Please try again or use URL sharing.',
+        requestId
       }),
     };
   }

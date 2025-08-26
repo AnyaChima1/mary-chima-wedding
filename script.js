@@ -1558,42 +1558,73 @@ photoForm?.addEventListener('submit', async (e) => {
   } catch (error) {
     console.error('Photo submission error:', error);
     
-    // Show user-friendly error message
+    // Show user-friendly error message with specific handling
     let errorMessage = 'Sorry, there was an error: ' + error.message;
+    let showDebugHint = false;
     
-    // Specific error handling
-    if (error.message.includes('Database connection')) {
-      errorMessage = 'Unable to connect to the database. Please try again in a few moments.';
-    } else if (error.message.includes('File size')) {
-      errorMessage = 'File size is too large. Please use files smaller than 10MB.';
+    // Specific error handling with actionable advice
+    if (error.message.includes('Database connection') || error.message.includes('database insert failed')) {
+      errorMessage = '🛠️ Database connection issue. This is a server problem - please try again in a few moments or contact support.';
+      showDebugHint = true;
+    } else if (error.message.includes('502') || error.message.includes('Function timeout')) {
+      errorMessage = '⏱️ Upload timed out. Your file may be too large. Try:\n• Using a smaller image (under 2MB)\n• Compressing your photo first\n• Using URL sharing instead';
+      showDebugHint = true;
+    } else if (error.message.includes('500') || error.message.includes('Internal server error')) {
+      errorMessage = '😱 Server error occurred. Please try:\n• Refreshing the page\n• Using URL sharing instead\n• Contacting support with debug logs';
+      showDebugHint = true;
+    } else if (error.message.includes('File size') || error.message.includes('413')) {
+      errorMessage = '📎 File too large. Please:\n• Use images smaller than 5MB\n• Compress your photos first\n• Try URL sharing for large files';
     } else if (error.message.includes('Invalid file type')) {
-      errorMessage = 'Invalid file type. Please use JPG, PNG, GIF, or MP4 files only.';
+      errorMessage = '📄 Invalid file type. Please use JPG, PNG, GIF, or MP4 files only.';
+    } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+      errorMessage = '🌐 Network connection issue. Please check your internet and try again.';
     }
     
-    // Create and show error notification
+    // Create and show error notification with enhanced styling
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText = `
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #f44336;
+      background: linear-gradient(135deg, #f44336, #d32f2f);
       color: white;
-      padding: 16px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(244,67,54,0.3);
       z-index: 10000;
       max-width: 400px;
       font-weight: 500;
+      line-height: 1.5;
+      font-size: 14px;
+      border-left: 4px solid #fff;
     `;
-    errorDiv.textContent = errorMessage;
+    
+    let displayMessage = errorMessage;
+    if (showDebugHint) {
+      displayMessage += '\n\n🐛 Need help? Use the Debug Panel below to download error logs.';
+    }
+    
+    errorDiv.innerHTML = `
+      <div style="margin-bottom: 8px; font-weight: 600;">⚠️ Upload Failed</div>
+      <div style="white-space: pre-line;">${displayMessage}</div>
+      ${showDebugHint ? '<div style="margin-top: 12px; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 12px;">💡 <strong>Tip:</strong> Download debug logs and send them for faster support!</div>' : ''}
+    `;
+    
     document.body.appendChild(errorDiv);
     
-    // Remove error message after 5 seconds
+    // Show debug console for serious errors
+    if (showDebugHint) {
+      setTimeout(showDebugConsole, 500);
+    }
+    
+    // Remove error message after 8 seconds (longer for complex errors)
     setTimeout(() => {
       if (errorDiv && errorDiv.parentNode) {
-        errorDiv.remove();
+        errorDiv.style.opacity = '0';
+        errorDiv.style.transform = 'translateX(100%)';
+        setTimeout(() => errorDiv.remove(), 300);
       }
-    }, 5000);
+    }, showDebugHint ? 10000 : 6000);
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
