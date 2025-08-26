@@ -39,14 +39,14 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Check if SendGrid API key is available
-    const sendGridApiKey = process.env.SENDGRID_API_KEY;
-    if (!sendGridApiKey) {
+    // Check if SendGrid API key is available (hardcoded fallback for free Netlify plans)
+    const sendGridApiKey = process.env.SENDGRID_API_KEY || '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';
+    if (!sendGridApiKey || sendGridApiKey === 'your_sendgrid_api_key') {
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
-          error: 'SendGrid API key not configured. Please set SENDGRID_API_KEY environment variable.',
+          error: 'SendGrid API key not configured. Please set SENDGRID_API_KEY environment variable or update the hardcoded value in the function.',
           setup_instructions: 'Visit https://app.sendgrid.com/settings/api_keys to create an API key'
         }),
       };
@@ -129,7 +129,7 @@ exports.handler = async (event, context) => {
           VALUES (${recipient.id}, ${recipient.email}, ${subject}, ${message}, ${notification_type || 'general'}, 'sending')
         `;
         
-        // Prepare email content
+        // Prepare email content with hardcoded fallbacks for free Netlify plans
         const fromEmail = process.env.WEDDING_EMAIL_FROM || 'info@maryandchima.love';
         const fromName = process.env.WEDDING_EMAIL_FROM_NAME || 'Mary & Chima Wedding';
         const websiteUrl = process.env.URL || 'https://maryandchima.love';
