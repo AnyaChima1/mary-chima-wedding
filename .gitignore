@@ -48,10 +48,13 @@ Thumbs.db
 *.swo
 *~
 
-# Sensitive configuration files (uncomment if needed)
+# Sensitive configuration files (uncomment if needed for extra security)
 # email-config.js
 # config/secrets.js
 
 # API keys and secrets (add specific files if needed)
 # secrets.json
 # api-keys.txt
+
+# Alternative: Specific sensitive files
+# netlify/functions/email-config.js
