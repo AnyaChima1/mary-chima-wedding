@@ -4,10 +4,18 @@
   "description": "Netlify functions for Mary & Chima wedding RSVP system",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "netlify dev",
+    "build": "echo \"Build completed\"",
+    "start": "netlify dev",
+    "deploy": "netlify deploy",
+    "deploy:prod": "netlify deploy --prod"
   },
   "dependencies": {
     "@netlify/neon": "^0.1.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
   },
   "keywords": [
     "netlify",

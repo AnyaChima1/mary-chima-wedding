@@ -42,7 +42,16 @@ exports.handler = async (event, context) => {
     }
 
     // Initialize Neon connection
-    const sql = neon();
+    const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Database connection not configured' }),
+      };
+    }
+    
+    const sql = neon(databaseUrl);
 
     // Get query parameters
     const { type = 'all' } = event.queryStringParameters || {};

@@ -1185,6 +1185,144 @@
     });
     
     // Note: Initial data loading is now handled by showDashboard() after authentication
+    
+    // Missing function implementations
+    
+    // Filter guests function
+    function filterGuests(filter) {
+      if (!requireAuth()) return;
+      
+      let url = '/.netlify/functions/get-individual-guests';
+      if (filter && filter !== 'all') {
+        url += `?filter_type=${filter}`;
+      }
+      
+      fetch(url, {
+        headers: { 'Authorization': `Bearer ${adminPassword}` }
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          displayGuests(result.data);
+        } else {
+          document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
+        }
+      })
+      .catch(error => {
+        console.error('Error filtering guests:', error);
+        document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
+      });
+      
+      // Update button states
+      const buttons = document.querySelectorAll('#guests-content .controls .btn-secondary');
+      buttons.forEach(btn => {
+        btn.style.backgroundColor = '#f0f0f0';
+        btn.style.color = '#333';
+      });
+      
+      // Highlight active button based on filter
+      const buttonIndex = ['primary', 'additional', 'dietary', 'all'].indexOf(filter);
+      if (buttonIndex >= 0 && buttons[buttonIndex]) {
+        buttons[buttonIndex].style.backgroundColor = '#c8a951';
+        buttons[buttonIndex].style.color = 'white';
+      }
+    }
+    
+    // Show unassigned guests function
+    function showUnassigned() {
+      if (!requireAuth()) return;
+      
+      fetch('/.netlify/functions/get-individual-guests', {
+        headers: { 'Authorization': `Bearer ${adminPassword}` }
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          const unassignedGuests = result.data.filter(guest => !guest.table_number);
+          const unassignedList = document.getElementById('unassigned-list');
+          
+          if (unassignedGuests.length === 0) {
+            unassignedList.innerHTML = '<div class="loading">All guests are assigned to tables!</div>';
+          } else {
+            unassignedList.innerHTML = unassignedGuests.map(guest => `
+              <div class="guest-item draggable" data-guest-id="${guest.id}">
+                <span>${guest.guest_name}${guest.is_primary ? ' (Primary)' : ''}</span>
+              </div>
+            `).join('');
+          }
+        } else {
+          document.getElementById('unassigned-list').innerHTML = '<div class="error">Error loading unassigned guests</div>';
+        }
+      })
+      .catch(error => {
+        console.error('Error loading unassigned guests:', error);
+        document.getElementById('unassigned-list').innerHTML = '<div class="error">Error loading unassigned guests</div>';
+      });
+    }
+    
+    // Auto-assign tables function
+    function autoAssignTables() {
+      if (!requireAuth()) return;
+      
+      if (!confirm('This will automatically assign unassigned guests to tables with available space. Continue?')) {
+        return;
+      }
+      
+      fetch('/.netlify/functions/get-individual-guests', {
+        headers: { 'Authorization': `Bearer ${adminPassword}` }
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          const unassignedGuests = result.data.filter(guest => !guest.table_number);
+          
+          if (unassignedGuests.length === 0) {
+            alert('All guests are already assigned to tables!');
+            return;
+          }
+          
+          // Simple auto-assignment logic: assign to tables 1-10 with max 8 guests each
+          let currentTable = 1;
+          let guestsPerTable = {};
+          
+          // Count existing assignments
+          result.data.forEach(guest => {
+            if (guest.table_number) {
+              guestsPerTable[guest.table_number] = (guestsPerTable[guest.table_number] || 0) + 1;
+            }
+          });
+          
+          // Assign unassigned guests
+          const assignments = [];
+          unassignedGuests.forEach(guest => {
+            // Find a table with space
+            while (currentTable <= 10 && (guestsPerTable[currentTable] || 0) >= 8) {
+              currentTable++;
+            }
+            
+            if (currentTable <= 10) {
+              assignments.push({
+                guest_id: guest.id,
+                table_number: currentTable
+              });
+              guestsPerTable[currentTable] = (guestsPerTable[currentTable] || 0) + 1;
+            }
+          });
+          
+          if (assignments.length > 0) {
+            // Update table assignments (this would need a backend function)
+            alert(`Would assign ${assignments.length} guests to tables. Implementation pending.`);
+            // TODO: Implement actual table assignment update
+          } else {
+            alert('No available table space for auto-assignment.');
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error auto-assigning tables:', error);
+        alert('Error auto-assigning tables. Please try again.');
+      });
+    }
   </script>
 </body>
 </html>

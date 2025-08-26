@@ -590,7 +590,7 @@
       <button class="lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
       <button class="lightbox-next" onclick="navigateLightbox(1)">›</button>
       <div class="lightbox-media">
-        <img id="lightbox-image" src="" alt="" style="display: none;">
+        <img id="lightbox-image" src="" alt="Gallery image" style="display: none;">
         <video id="lightbox-video" controls style="display: none;"></video>
       </div>
       <div class="lightbox-info">
@@ -745,5 +745,20 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Error handling for resource loading
+    window.addEventListener('error', function(e) {
+      if (e.target !== window) {
+        console.error('Resource failed to load:', e.target.src || e.target.href);
+        // Handle CSS loading failure
+        if (e.target.tagName === 'LINK') {
+          console.warn('CSS file failed to load. Applying basic fallback styles.');
+          const fallbackCSS = document.createElement('style');
+          fallbackCSS.textContent = 'body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f9f9f9}';
+          document.head.appendChild(fallbackCSS);
+        }
+      }
+    }, true);
+  </script>
 </body>
 </html>
