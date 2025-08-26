@@ -953,13 +953,33 @@ function displayGallery(photos) {
   }
   
   galleryGrid.innerHTML = photos.map((photo, index) => {
-    const isVideo = photo.photo_url.includes('.mp4') || photo.photo_url.includes('.mov') || photo.photo_url.includes('video');
+    // Determine if it's a video based on file type or URL
+    const isVideo = (photo.file_type && photo.file_type.startsWith('video/')) || 
+                   photo.photo_url.includes('.mp4') || 
+                   photo.photo_url.includes('.mov') || 
+                   photo.photo_url.includes('video');
+    
+    // Handle different types of photo URLs
+    let photoSrc = photo.photo_url;
+    let imageElement = '';
+    
+    if (isVideo) {
+      imageElement = `<video src="${photoSrc}" muted preload="metadata" onError="this.style.display='none'; this.nextElementSibling.style.display='block';"></video>
+        <div class="error-placeholder" style="display: none; padding: 20px; background: #f5f5f5; text-align: center; color: #666;">Video unavailable</div>`;
+    } else {
+      imageElement = `<img src="${photoSrc}" alt="${photo.description || 'Wedding photo'}" loading="lazy" 
+        onError="this.style.display='none'; this.nextElementSibling.style.display='block';" 
+        onLoad="this.style.display='block'; this.nextElementSibling.style.display='none';">
+        <div class="error-placeholder" style="display: none; padding: 20px; background: #f5f5f5; text-align: center; color: #666; border-radius: 8px;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
+          <div>Image unavailable</div>
+          <small>URL may be invalid or access restricted</small>
+        </div>`;
+    }
+    
     return `
       <div class="gallery-item ${isVideo ? 'is-video' : ''}" onclick="openLightbox(${index})">
-        ${isVideo ? 
-          `<video src="${photo.photo_url}" muted></video>` : 
-          `<img src="${photo.photo_url}" alt="${photo.description || 'Wedding photo'}" loading="lazy">`
-        }
+        ${imageElement}
         <div class="gallery-item-overlay">
           <div class="gallery-item-title">${photo.name}</div>
           <div class="gallery-item-meta">${photo.category} • ${new Date(photo.created_at).toLocaleDateString()}</div>
@@ -1003,16 +1023,37 @@ function openLightbox(index) {
   // Set media
   const image = document.getElementById('lightbox-image');
   const video = document.getElementById('lightbox-video');
-  const isVideo = photo.photo_url.includes('.mp4') || photo.photo_url.includes('.mov') || photo.photo_url.includes('video');
   
-  if (isVideo) {
+  // Determine if it's a video based on file type or URL
+  const isVideo = (photo.file_type && photo.file_type.startsWith('video/')) || 
+                 photo.photo_url.includes('.mp4') || 
+                 photo.photo_url.includes('.mov') || 
+                 photo.photo_url.includes('video');
+  
+  if (isVideo && video) {
     video.src = photo.photo_url;
     video.style.display = 'block';
-    image.style.display = 'none';
-  } else {
+    if (image) image.style.display = 'none';
+    
+    // Add error handling for video
+    video.onerror = function() {
+      this.style.display = 'none';
+      if (image) {
+        image.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+VmlkZW8gdW5hdmFpbGFibGU8L3RleHQ+PC9zdmc+';
+        image.alt = 'Video unavailable';
+        image.style.display = 'block';
+      }
+    };
+  } else if (image) {
     image.src = photo.photo_url;
     image.style.display = 'block';
-    video.style.display = 'none';
+    if (video) video.style.display = 'none';
+    
+    // Add error handling for images
+    image.onerror = function() {
+      this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI0NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2UgdW5hdmFpbGFibGU8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMHB4IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+VVJMIG1heSBiZSBpbnZhbGlkPC90ZXh0Pjwvc3ZnPic=';
+      this.alt = 'Image unavailable - URL may be invalid or access restricted';
+    };
   }
   
   // Set info
@@ -1074,11 +1115,29 @@ photoForm?.addEventListener('submit', async (e) => {
     const formData = new FormData(photoForm);
     
     if (currentUploadMethod === 'url') {
-      // Handle URL submission
+      // Handle URL submission with validation
+      const photoUrl = formData.get('photo_url');
+      
+      // Enhanced URL validation
+      if (!photoUrl || photoUrl.trim() === '') {
+        throw new Error('Please provide a photo URL');
+      }
+      
+      // Check if URL is accessible (basic validation)
+      const urlPattern = /^https?:\/\/.+/;
+      if (!urlPattern.test(photoUrl)) {
+        throw new Error('Please provide a valid URL starting with http:// or https://');
+      }
+      
+      // Warn about common URL issues
+      if (photoUrl.includes('photos.google.com') && !photoUrl.includes('/u/0/') && !photoUrl.includes('share')) {
+        console.warn('Google Photos URL may require sharing permissions');
+      }
+      
       const photoData = {
         name: formData.get('name'),
         email: formData.get('email'),
-        photo_url: formData.get('photo_url'),
+        photo_url: photoUrl,
         description: formData.get('description'),
         category: formData.get('category')
       };
@@ -1095,7 +1154,7 @@ photoForm?.addEventListener('submit', async (e) => {
         throw new Error(result.error || 'Failed to submit photo');
       }
       
-      showPhotoSuccess();
+      showPhotoSuccess('Photo URL shared successfully! It may take a moment to appear in the gallery.');
       
     } else {
       // Handle file upload

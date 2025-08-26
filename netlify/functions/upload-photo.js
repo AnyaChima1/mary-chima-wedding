@@ -173,16 +173,42 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Upload error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Request data size:', event.body?.length || 0, 'bytes');
+    console.error('Upload error details:', {
+      message: error.message,
+      stack: error.stack,
+      requestSize: event.body?.length || 0,
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      timestamp: new Date().toISOString()
+    });
+
+    // Provide specific error messages based on error type
+    let userMessage = 'Internal server error. Please try again later.';
+    let statusCode = 500;
+    
+    if (error.message.includes('Invalid JSON')) {
+      userMessage = 'Invalid data format. Please try again.';
+      statusCode = 400;
+    } else if (error.message.includes('connection') || error.message.includes('database')) {
+      userMessage = 'Database connection issue. Please try again in a moment.';
+      statusCode = 503;
+    } else if (error.message.includes('timeout')) {
+      userMessage = 'Upload timed out. Please try with a smaller file or check your connection.';
+      statusCode = 408;
+    } else if (error.message.includes('file size') || error.message.includes('size exceeds')) {
+      userMessage = 'File size exceeds 10MB limit. Please use a smaller file.';
+      statusCode = 413;
+    }
 
     return {
-      statusCode: 500,
+      statusCode,
       headers,
       body: JSON.stringify({
-        error: 'Internal server error. Please try again later.',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: userMessage,
+        details: process.env.NODE_ENV === 'development' ? {
+          originalError: error.message,
+          requestSize: event.body?.length || 0
+        } : undefined
       }),
     };
   }

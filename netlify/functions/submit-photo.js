@@ -83,7 +83,7 @@ exports.handler = async (event, context) => {
     
     const sql = neon(databaseUrl);
 
-    // Create table if it doesn't exist
+    // Create table if it doesn't exist (with support for both URL and file data)
     await sql`
       CREATE TABLE IF NOT EXISTS photo_shares (
         id SERIAL PRIMARY KEY,
@@ -92,6 +92,9 @@ exports.handler = async (event, context) => {
         photo_url TEXT NOT NULL,
         description TEXT,
         category VARCHAR(100) DEFAULT 'other',
+        file_data TEXT,
+        filename VARCHAR(500),
+        file_type VARCHAR(100),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
@@ -107,6 +110,9 @@ exports.handler = async (event, context) => {
         photo_url, 
         description, 
         category,
+        file_data,
+        filename,
+        file_type,
         created_at,
         updated_at
       ) VALUES (
@@ -115,6 +121,9 @@ exports.handler = async (event, context) => {
         ${photo_url},
         ${data.description || ''},
         ${data.category || 'other'},
+        ${null},
+        ${null},
+        ${null},
         ${currentTime},
         ${currentTime}
       )
