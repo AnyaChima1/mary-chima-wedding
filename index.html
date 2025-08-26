@@ -203,15 +203,15 @@
   </ul>
 
   <div class="actions">
-    <a class="btn btn--primary" href="https://forms.gle/FSWUB224tigdqMZZA" target="_blank" rel="noopener">
-      Open RSVP Form
+    <a class="btn btn--primary" href="#rsvp-modal" onclick="openRSVPModal()">
+      RSVP Now
     </a>
-    <a class="btn btn--ghost" href="https://forms.gle/FSWUB224tigdqMZZA" target="_blank" rel="noopener">
+    <a class="btn btn--ghost" href="#rsvp-modal" onclick="openRSVPModal()">
       Edit my response
     </a>
   </div>
 
-  <p class="hint">This opens our Google RSVP form in a new tab.</p>
+  <p class="hint">Complete your RSVP directly on our website.</p>
 </div>
         <div class="card card--song">
   <div class="card__header">
@@ -229,10 +229,10 @@
   </div>
 
   <div class="actions">
-    <a class="btn btn--primary" href="https://forms.gle/axmxKDjryQyJZECQ8" target="_blank" rel="noopener">
+    <a class="btn btn--primary" href="#song-modal" onclick="openSongModal()">
       Suggest a Song
     </a>
-    <a class="btn btn--ghost" href="https://forms.gle/axmxKDjryQyJZECQ8" target="_blank" rel="noopener">
+    <a class="btn btn--ghost" href="#song-modal" onclick="openSongModal()">
       Add another
     </a>
   </div>
@@ -337,10 +337,10 @@
           </ul>
           
           <div class="actions">
-            <a class="btn btn--primary" href="https://photos.app.goo.gl/TTaXWLuoMudM1zjL9" target="_blank" rel="noopener">
-              Open Shared Album
+            <a class="btn btn--primary" href="#photo-modal" onclick="openPhotoModal()">
+              Share Photos
             </a>
-            <a class="btn btn--ghost" href="https://photos.app.goo.gl/TTaXWLuoMudM1zjL9" target="_blank" rel="noopener">
+            <a class="btn btn--ghost" href="#photo-modal" onclick="openPhotoModal()">
               View Gallery
             </a>
           </div>
@@ -363,10 +363,10 @@
           </div>
           
           <div class="actions">
-            <a class="btn btn--primary" href="https://forms.gle/H5xM7q3yaSWY2xFp6" target="_blank" rel="noopener">
+            <a class="btn btn--primary" href="#wishes-modal" onclick="openWishesModal()">
               Send a Wish
             </a>
-            <a class="btn btn--ghost" href="https://forms.gle/H5xM7q3yaSWY2xFp6" target="_blank" rel="noopener">
+            <a class="btn btn--ghost" href="#wishes-modal" onclick="openWishesModal()">
               Add Another
             </a>
           </div>
@@ -383,6 +383,199 @@
       <p>Mary &amp; Chima • Tallinn • 4 Oct 2025</p>
     </div>
   </footer>
+
+  <!-- Wishes Modal -->
+  <div id="wishes-modal" class="modal" role="dialog" aria-labelledby="wishes-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__header">
+        <h2 id="wishes-modal-title">Leave Your Wishes</h2>
+        <button class="modal__close" aria-label="Close wishes form">&times;</button>
+      </div>
+      
+      <div class="modal__body">
+        <p class="modal__intro">Share a blessing, prayer, or heartfelt message for Mary & Chima. Your words mean the world to us.</p>
+        
+        <form class="wishes-form" id="wishes-form">
+          <div class="form-group">
+            <label for="wishes-name">Your Name *</label>
+            <input type="text" id="wishes-name" name="name" required placeholder="Enter your name">
+          </div>
+          
+          <div class="form-group">
+            <label for="wishes-email">Email Address *</label>
+            <input type="email" id="wishes-email" name="email" required placeholder="your.email@example.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="wishes-type">Type of Message</label>
+            <select id="wishes-type" name="message_type">
+              <option value="blessing">Blessing</option>
+              <option value="prayer">Prayer</option>
+              <option value="wish">Well Wishes</option>
+              <option value="advice">Marriage Advice</option>
+              <option value="memory">Shared Memory</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="wishes-message">Your Message *</label>
+            <textarea id="wishes-message" name="message" required placeholder="Share your heartfelt message, blessing, or advice for Mary & Chima..." rows="5"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="wishes-relationship">Your Relationship to the Couple (Optional)</label>
+            <input type="text" id="wishes-relationship" name="relationship" placeholder="e.g., Friend, Family, Colleague">
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Send Wishes 💝</button>
+            <button type="button" class="btn btn--ghost modal-close-btn">Cancel</button>
+          </div>
+        </form>
+        
+        <div class="wishes-success" id="wishes-success" style="display: none;">
+          <div class="success-icon">💝</div>
+          <h3>Wishes Sent!</h3>
+          <p>Thank you for your heartfelt message! Mary & Chima will treasure your words.</p>
+          <button class="btn btn--primary modal-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo Sharing Modal -->
+  <div id="photo-modal" class="modal" role="dialog" aria-labelledby="photo-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__header">
+        <h2 id="photo-modal-title">Share Your Photos</h2>
+        <button class="modal__close" aria-label="Close photo sharing form">&times;</button>
+      </div>
+      
+      <div class="modal__body">
+        <p class="modal__intro">Help us capture every memory! Share your favorite moments from our special day.</p>
+        
+        <form class="photo-form" id="photo-form">
+          <div class="form-group">
+            <label for="photo-sharer-name">Your Name *</label>
+            <input type="text" id="photo-sharer-name" name="name" required placeholder="Enter your name">
+          </div>
+          
+          <div class="form-group">
+            <label for="photo-sharer-email">Email Address *</label>
+            <input type="email" id="photo-sharer-email" name="email" required placeholder="your.email@example.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="photo-url">Photo/Video URL *</label>
+            <input type="url" id="photo-url" name="photo_url" required placeholder="https://photos.app.goo.gl/your-photo-link">
+            <small>Share links from Google Photos, iCloud, Dropbox, or any photo sharing service</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="photo-description">Description (Optional)</label>
+            <textarea id="photo-description" name="description" placeholder="Describe the moment or add a caption..." rows="3"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="photo-category">Category</label>
+            <select id="photo-category" name="category">
+              <option value="ceremony">Ceremony</option>
+              <option value="reception">Reception</option>
+              <option value="dancing">Dancing</option>
+              <option value="candid">Candid Moments</option>
+              <option value="group">Group Photos</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Share Photo 📷</button>
+            <button type="button" class="btn btn--ghost modal-close-btn">Cancel</button>
+          </div>
+        </form>
+        
+        <div class="photo-success" id="photo-success" style="display: none;">
+          <div class="success-icon">📷</div>
+          <h3>Photo Shared!</h3>
+          <p>Thank you for sharing your memories with us!</p>
+          <button class="btn btn--primary modal-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Song Request Modal -->
+  <div id="song-modal" class="modal" role="dialog" aria-labelledby="song-modal-title" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__content">
+      <div class="modal__header">
+        <h2 id="song-modal-title">Request a Song</h2>
+        <button class="modal__close" aria-label="Close song request form">&times;</button>
+      </div>
+      
+      <div class="modal__body">
+        <p class="modal__intro">Tell our DJ a track that will get you dancing! Help us create the perfect playlist for our special day.</p>
+        
+        <form class="song-form" id="song-form">
+          <div class="form-group">
+            <label for="song-requester-name">Your Name *</label>
+            <input type="text" id="song-requester-name" name="name" required placeholder="Enter your name">
+          </div>
+          
+          <div class="form-group">
+            <label for="song-requester-email">Email Address *</label>
+            <input type="email" id="song-requester-email" name="email" required placeholder="your.email@example.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="song-title">Song Title *</label>
+            <input type="text" id="song-title" name="song_title" required placeholder="Enter the song title">
+          </div>
+          
+          <div class="form-group">
+            <label for="artist-name">Artist Name *</label>
+            <input type="text" id="artist-name" name="artist_name" required placeholder="Enter the artist name">
+          </div>
+          
+          <div class="form-group">
+            <label for="song-genre">Genre (Optional)</label>
+            <select id="song-genre" name="genre">
+              <option value="">Select genre...</option>
+              <option value="afrobeats">Afrobeats</option>
+              <option value="amapiano">Amapiano</option>
+              <option value="classic-rb">Classic R&B</option>
+              <option value="highlife">Highlife</option>
+              <option value="hip-hop">Hip Hop</option>
+              <option value="pop">Pop</option>
+              <option value="reggae">Reggae</option>
+              <option value="gospel">Gospel</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="song-reason">Why this song? (Optional)</label>
+            <textarea id="song-reason" name="reason" placeholder="Tell us why this song is special or will get everyone dancing..." rows="3"></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Submit Song Request 🎵</button>
+            <button type="button" class="btn btn--ghost modal-close-btn">Cancel</button>
+          </div>
+        </form>
+        
+        <div class="song-success" id="song-success" style="display: none;">
+          <div class="success-icon">🎵</div>
+          <h3>Song Added!</h3>
+          <p>Thanks for the song request! Our DJ will add it to the playlist.</p>
+          <button class="btn btn--primary modal-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- RSVP Modal -->
   <div id="rsvp-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
@@ -436,10 +629,7 @@
             <textarea id="dietary" name="dietary" placeholder="Any allergies, dietary restrictions, or special requirements..." rows="3"></textarea>
           </div>
           
-          <div class="form-group">
-            <label for="message">Special Message for Mary & Chima</label>
-            <textarea id="message" name="message" placeholder="Share a blessing, wish, or special message..." rows="4"></textarea>
-          </div>
+
           
           <div class="form-actions">
             <button type="submit" class="btn btn--primary">Submit RSVP 💕</button>

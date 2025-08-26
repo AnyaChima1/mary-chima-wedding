@@ -98,7 +98,6 @@ exports.handler = async (event, context) => {
           guest_count = ${data.guest_count || 1},
           guest_names = ${data.guest_names || ''},
           dietary_requirements = ${data.dietary || ''},
-          special_message = ${data.message || ''},
           updated_at = ${currentTime}
         WHERE email = ${email}
         RETURNING id, name, email, attendance
@@ -124,7 +123,6 @@ exports.handler = async (event, context) => {
           guest_count, 
           guest_names, 
           dietary_requirements, 
-          special_message,
           created_at,
           updated_at
         ) VALUES (
@@ -134,7 +132,6 @@ exports.handler = async (event, context) => {
           ${data.guest_count || 1},
           ${data.guest_names || ''},
           ${data.dietary || ''},
-          ${data.message || ''},
           ${currentTime},
           ${currentTime}
         )

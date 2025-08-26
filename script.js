@@ -486,8 +486,7 @@ rsvpForm?.addEventListener('submit', async (e) => {
       attendance: formData.get('attendance'),
       guest_count: formData.get('guest_count') || '1',
       guest_names: formData.get('guest_names') || '',
-      dietary: formData.get('dietary') || '',
-      message: formData.get('message') || ''
+      dietary: formData.get('dietary') || ''
     };
     
     // Submit to Netlify function
@@ -620,6 +619,288 @@ addFormValidation();
 toggleConditionalFields();
 
 console.log('🎉 RSVP Modal functionality loaded!');
+
+// ========================================
+// SONG REQUEST MODAL FUNCTIONALITY
+// ========================================
+const songModal = document.getElementById('song-modal');
+const songForm = document.getElementById('song-form');
+const songSuccess = document.getElementById('song-success');
+
+// Open song modal
+function openSongModal() {
+  songModal.classList.add('is-open');
+  songModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  
+  setTimeout(() => {
+    document.getElementById('song-requester-name').focus();
+  }, 300);
+  
+  createCelebration(document.querySelector('.card--song'));
+}
+
+// Close song modal
+function closeSongModal() {
+  songModal.classList.remove('is-open');
+  songModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  
+  setTimeout(() => {
+    songForm.reset();
+    songForm.style.display = 'flex';
+    songSuccess.style.display = 'none';
+  }, 300);
+}
+
+// Song form submission
+songForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitBtn = songForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Submitting... ⏳';
+  submitBtn.disabled = true;
+  
+  try {
+    const formData = new FormData(songForm);
+    const songData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      song_title: formData.get('song_title'),
+      artist_name: formData.get('artist_name'),
+      genre: formData.get('genre'),
+      reason: formData.get('reason')
+    };
+    
+    const response = await fetch('/.netlify/functions/submit-song', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(songData)
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to submit song request');
+    }
+    
+    songForm.style.display = 'none';
+    songSuccess.style.display = 'flex';
+    createCelebration(songSuccess);
+    
+  } catch (error) {
+    console.error('Song submission error:', error);
+    alert('Sorry, there was an error submitting your song request. Please try again.');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+});
+
+// ========================================
+// PHOTO SHARING MODAL FUNCTIONALITY
+// ========================================
+const photoModal = document.getElementById('photo-modal');
+const photoForm = document.getElementById('photo-form');
+const photoSuccess = document.getElementById('photo-success');
+
+// Open photo modal
+function openPhotoModal() {
+  photoModal.classList.add('is-open');
+  photoModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  
+  setTimeout(() => {
+    document.getElementById('photo-sharer-name').focus();
+  }, 300);
+  
+  createCelebration(document.querySelector('.card--photos'));
+}
+
+// Close photo modal
+function closePhotoModal() {
+  photoModal.classList.remove('is-open');
+  photoModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  
+  setTimeout(() => {
+    photoForm.reset();
+    photoForm.style.display = 'flex';
+    photoSuccess.style.display = 'none';
+  }, 300);
+}
+
+// Photo form submission
+photoForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitBtn = photoForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Submitting... ⏳';
+  submitBtn.disabled = true;
+  
+  try {
+    const formData = new FormData(photoForm);
+    const photoData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      photo_url: formData.get('photo_url'),
+      description: formData.get('description'),
+      category: formData.get('category')
+    };
+    
+    const response = await fetch('/.netlify/functions/submit-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(photoData)
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to submit photo');
+    }
+    
+    photoForm.style.display = 'none';
+    photoSuccess.style.display = 'flex';
+    createCelebration(photoSuccess);
+    
+  } catch (error) {
+    console.error('Photo submission error:', error);
+    alert('Sorry, there was an error submitting your photo. Please try again.');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+});
+
+// ========================================
+// WISHES MODAL FUNCTIONALITY
+// ========================================
+const wishesModal = document.getElementById('wishes-modal');
+const wishesForm = document.getElementById('wishes-form');
+const wishesSuccess = document.getElementById('wishes-success');
+
+// Open wishes modal
+function openWishesModal() {
+  wishesModal.classList.add('is-open');
+  wishesModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  
+  setTimeout(() => {
+    document.getElementById('wishes-name').focus();
+  }, 300);
+  
+  createCelebration(document.querySelector('.card--wishes'));
+}
+
+// Close wishes modal
+function closeWishesModal() {
+  wishesModal.classList.remove('is-open');
+  wishesModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  
+  setTimeout(() => {
+    wishesForm.reset();
+    wishesForm.style.display = 'flex';
+    wishesSuccess.style.display = 'none';
+  }, 300);
+}
+
+// Wishes form submission
+wishesForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitBtn = wishesForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Submitting... ⏳';
+  submitBtn.disabled = true;
+  
+  try {
+    const formData = new FormData(wishesForm);
+    const wishesData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      message: formData.get('message'),
+      message_type: formData.get('message_type'),
+      relationship: formData.get('relationship')
+    };
+    
+    const response = await fetch('/.netlify/functions/submit-wishes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(wishesData)
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to submit wishes');
+    }
+    
+    wishesForm.style.display = 'none';
+    wishesSuccess.style.display = 'flex';
+    createCelebration(wishesSuccess);
+    
+  } catch (error) {
+    console.error('Wishes submission error:', error);
+    alert('Sorry, there was an error submitting your wishes. Please try again.');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+});
+
+// ========================================
+// GLOBAL MODAL MANAGEMENT
+// ========================================
+// Handle all modal close buttons
+document.querySelectorAll('.modal__close, .modal-close-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const modal = e.target.closest('.modal');
+    if (modal) {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      
+      // Reset forms after closing
+      setTimeout(() => {
+        const form = modal.querySelector('form');
+        const success = modal.querySelector('[id$="-success"]');
+        if (form && success) {
+          form.reset();
+          form.style.display = 'flex';
+          success.style.display = 'none';
+        }
+      }, 300);
+    }
+  });
+});
+
+// Handle backdrop clicks
+document.querySelectorAll('.modal__backdrop').forEach(backdrop => {
+  backdrop.addEventListener('click', (e) => {
+    const modal = e.target.closest('.modal');
+    if (modal) {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  });
+});
+
+// Handle ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const openModal = document.querySelector('.modal.is-open');
+    if (openModal) {
+      openModal.classList.remove('is-open');
+      openModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  }
+});
 
 // Enhanced loading sequence with elegant reveals
 window.addEventListener('load', () => {

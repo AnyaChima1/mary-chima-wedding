@@ -49,6 +49,37 @@
       margin-bottom: 20px;
       flex-wrap: wrap;
     }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      border: none;
+      background: #f0f0f0;
+      color: #333;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .tab-btn.active {
+      background: #c8a951;
+      color: white;
+    }
+    .tab-btn:hover {
+      background: #d4b963;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
     .btn {
       padding: 10px 20px;
       border: none;
@@ -133,49 +164,176 @@
   <div class="container">
     <div class="header">
       <h1>Mary & Chima Wedding</h1>
-      <p>RSVP Management Dashboard</p>
+      <p>Complete Event Management Dashboard</p>
     </div>
 
-    <div class="stats" id="stats">
-      <div class="stat-card">
-        <div class="stat-number" id="total-responses">-</div>
-        <div>Total Responses</div>
+    <!-- Tab Navigation -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('rsvps')">RSVPs</button>
+      <button class="tab-btn" onclick="switchTab('songs')">Song Requests</button>
+      <button class="tab-btn" onclick="switchTab('photos')">Photo Shares</button>
+      <button class="tab-btn" onclick="switchTab('wishes')">Wishes</button>
+    </div>
+
+    <!-- RSVP Tab Content -->
+    <div id="rsvps-content" class="tab-content active">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="total-responses">-</div>
+          <div>Total Responses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="attending">-</div>
+          <div>Attending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="not-attending">-</div>
+          <div>Not Attending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-guests">-</div>
+          <div>Total Guests</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-number" id="attending">-</div>
-        <div>Attending</div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="loadRSVPs()">Refresh</button>
+        <button class="btn btn-secondary" onclick="filterRSVPs('yes')">Show Attending</button>
+        <button class="btn btn-secondary" onclick="filterRSVPs('no')">Show Not Attending</button>
+        <button class="btn btn-secondary" onclick="filterRSVPs('')">Show All</button>
       </div>
-      <div class="stat-card">
-        <div class="stat-number" id="not-attending">-</div>
-        <div>Not Attending</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="total-guests">-</div>
-        <div>Total Guests</div>
+
+      <div id="rsvp-error-container"></div>
+      <div class="rsvp-list" id="rsvp-list">
+        <div class="loading">Loading RSVPs...</div>
       </div>
     </div>
 
-    <div class="controls">
-      <button class="btn btn-primary" onclick="loadRSVPs()">Refresh</button>
-      <button class="btn btn-secondary" onclick="filterRSVPs('yes')">Show Attending</button>
-      <button class="btn btn-secondary" onclick="filterRSVPs('no')">Show Not Attending</button>
-      <button class="btn btn-secondary" onclick="filterRSVPs('')">Show All</button>
+    <!-- Songs Tab Content -->
+    <div id="songs-content" class="tab-content">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="total-songs">-</div>
+          <div>Total Song Requests</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="popular-genre">-</div>
+          <div>Most Popular Genre</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="loadSongs()">Refresh Songs</button>
+      </div>
+
+      <div id="songs-error-container"></div>
+      <div class="rsvp-list" id="songs-list">
+        <div class="loading">Loading song requests...</div>
+      </div>
     </div>
 
-    <div id="error-container"></div>
+    <!-- Photos Tab Content -->
+    <div id="photos-content" class="tab-content">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="total-photos">-</div>
+          <div>Total Photos Shared</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="popular-category">-</div>
+          <div>Most Popular Category</div>
+        </div>
+      </div>
 
-    <div class="rsvp-list" id="rsvp-list">
-      <div class="loading">Loading RSVPs...</div>
+      <div class="controls">
+        <button class="btn btn-primary" onclick="loadPhotos()">Refresh Photos</button>
+        <button class="btn btn-secondary" onclick="filterPhotos('ceremony')">Ceremony</button>
+        <button class="btn btn-secondary" onclick="filterPhotos('reception')">Reception</button>
+        <button class="btn btn-secondary" onclick="filterPhotos('dancing')">Dancing</button>
+        <button class="btn btn-secondary" onclick="filterPhotos('all')">All Categories</button>
+      </div>
+
+      <div id="photos-error-container"></div>
+      <div class="rsvp-list" id="photos-list">
+        <div class="loading">Loading photo shares...</div>
+      </div>
+    </div>
+
+    <!-- Wishes Tab Content -->
+    <div id="wishes-content" class="tab-content">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="total-wishes">-</div>
+          <div>Total Wishes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="popular-message-type">-</div>
+          <div>Most Common Type</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="loadWishes()">Refresh Wishes</button>
+        <button class="btn btn-secondary" onclick="filterWishes('blessing')">Blessings</button>
+        <button class="btn btn-secondary" onclick="filterWishes('prayer')">Prayers</button>
+        <button class="btn btn-secondary" onclick="filterWishes('advice')">Advice</button>
+        <button class="btn btn-secondary" onclick="filterWishes('all')">All Types</button>
+      </div>
+
+      <div id="wishes-error-container"></div>
+      <div class="rsvp-list" id="wishes-list">
+        <div class="loading">Loading wishes...</div>
+      </div>
     </div>
   </div>
 
   <script>
     let currentFilter = '';
-    const adminPassword = prompt('Enter admin password (leave empty if none set):');
+    let currentTab = 'rsvps';
+    const adminPassword = 'Mary&Chima0003';
 
+    // Tab Management
+    function switchTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      // Remove active class from all tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      document.getElementById(tabName + '-content').classList.add('active');
+      
+      // Add active class to selected tab button
+      event.target.classList.add('active');
+      
+      // Update current tab
+      currentTab = tabName;
+      
+      // Load data for the selected tab
+      switch(tabName) {
+        case 'rsvps':
+          loadRSVPs();
+          break;
+        case 'songs':
+          loadSongs();
+          break;
+        case 'photos':
+          loadPhotos();
+          break;
+        case 'wishes':
+          loadWishes();
+          break;
+      }
+    }
+
+    // RSVP Functions
     async function loadRSVPs(filter = '') {
       const container = document.getElementById('rsvp-list');
-      const errorContainer = document.getElementById('error-container');
+      const errorContainer = document.getElementById('rsvp-error-container');
       
       try {
         container.innerHTML = '<div class="loading">Loading RSVPs...</div>';
@@ -183,11 +341,8 @@
         
         const headers = {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminPassword}`
         };
-        
-        if (adminPassword) {
-          headers['Authorization'] = `Bearer ${adminPassword}`;
-        }
         
         const url = filter ? 
           `/.netlify/functions/get-rsvps?attendance=${filter}` : 
@@ -221,7 +376,6 @@
               <p><strong>Guests:</strong> ${rsvp.guest_count}</p>
               ${rsvp.guest_names ? `<p><strong>Guest Names:</strong> ${rsvp.guest_names}</p>` : ''}
               ${rsvp.dietary_requirements ? `<p><strong>Dietary:</strong> ${rsvp.dietary_requirements}</p>` : ''}
-              ${rsvp.special_message ? `<p><strong>Message:</strong> ${rsvp.special_message}</p>` : ''}
               <p><strong>Submitted:</strong> ${new Date(rsvp.created_at).toLocaleDateString()}</p>
             </div>
             <div>
@@ -243,8 +397,187 @@
       currentFilter = filter;
       loadRSVPs(filter);
     }
+
+    // Song Functions
+    async function loadSongs() {
+      const container = document.getElementById('songs-list');
+      const errorContainer = document.getElementById('songs-error-container');
+      
+      try {
+        container.innerHTML = '<div class="loading">Loading song requests...</div>';
+        errorContainer.innerHTML = '';
+        
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminPassword}`
+        };
+        
+        const response = await fetch('/.netlify/functions/get-songs', { headers });
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to load songs');
+        }
+        
+        // Update statistics
+        document.getElementById('total-songs').textContent = result.statistics.total_songs || 0;
+        const topGenre = result.statistics.genre_breakdown[0];
+        document.getElementById('popular-genre').textContent = topGenre ? topGenre.genre : 'N/A';
+        
+        // Render songs
+        if (result.data.length === 0) {
+          container.innerHTML = '<div class="loading">No song requests found.</div>';
+          return;
+        }
+        
+        container.innerHTML = result.data.map(song => `
+          <div class="rsvp-item">
+            <div class="rsvp-details">
+              <h3>${song.song_title} by ${song.artist_name}</h3>
+              <p><strong>Requested by:</strong> ${song.name} (${song.email})</p>
+              ${song.genre ? `<p><strong>Genre:</strong> ${song.genre}</p>` : ''}
+              ${song.reason ? `<p><strong>Why:</strong> ${song.reason}</p>` : ''}
+              <p><strong>Requested:</strong> ${new Date(song.created_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <span class="attendance-badge attending">🎵 Song</span>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Error loading songs:', error);
+        errorContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.innerHTML = '<div class="loading">Failed to load songs.</div>';
+      }
+    }
+
+    // Photo Functions
+    async function loadPhotos(category = '') {
+      const container = document.getElementById('photos-list');
+      const errorContainer = document.getElementById('photos-error-container');
+      
+      try {
+        container.innerHTML = '<div class="loading">Loading photo shares...</div>';
+        errorContainer.innerHTML = '';
+        
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminPassword}`
+        };
+        
+        const url = category && category !== 'all' ? 
+          `/.netlify/functions/get-photos?category=${category}` : 
+          '/.netlify/functions/get-photos';
+        
+        const response = await fetch(url, { headers });
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to load photos');
+        }
+        
+        // Update statistics
+        document.getElementById('total-photos').textContent = result.statistics.total_photos || 0;
+        const topCategory = result.statistics.category_breakdown[0];
+        document.getElementById('popular-category').textContent = topCategory ? topCategory.category : 'N/A';
+        
+        // Render photos
+        if (result.data.length === 0) {
+          container.innerHTML = '<div class="loading">No photo shares found.</div>';
+          return;
+        }
+        
+        container.innerHTML = result.data.map(photo => `
+          <div class="rsvp-item">
+            <div class="rsvp-details">
+              <h3>Photo by ${photo.name}</h3>
+              <p><strong>Email:</strong> ${photo.email}</p>
+              <p><strong>Category:</strong> ${photo.category}</p>
+              <p><strong>URL:</strong> <a href="${photo.photo_url}" target="_blank">View Photo</a></p>
+              ${photo.description ? `<p><strong>Description:</strong> ${photo.description}</p>` : ''}
+              <p><strong>Shared:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <span class="attendance-badge attending">📷 Photo</span>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Error loading photos:', error);
+        errorContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.innerHTML = '<div class="loading">Failed to load photos.</div>';
+      }
+    }
     
-    // Load RSVPs on page load
+    function filterPhotos(category) {
+      loadPhotos(category);
+    }
+
+    // Wishes Functions
+    async function loadWishes(messageType = '') {
+      const container = document.getElementById('wishes-list');
+      const errorContainer = document.getElementById('wishes-error-container');
+      
+      try {
+        container.innerHTML = '<div class="loading">Loading wishes...</div>';
+        errorContainer.innerHTML = '';
+        
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminPassword}`
+        };
+        
+        const url = messageType && messageType !== 'all' ? 
+          `/.netlify/functions/get-wishes?message_type=${messageType}` : 
+          '/.netlify/functions/get-wishes';
+        
+        const response = await fetch(url, { headers });
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to load wishes');
+        }
+        
+        // Update statistics
+        document.getElementById('total-wishes').textContent = result.statistics.total_wishes || 0;
+        const topType = result.statistics.type_breakdown[0];
+        document.getElementById('popular-message-type').textContent = topType ? topType.message_type : 'N/A';
+        
+        // Render wishes
+        if (result.data.length === 0) {
+          container.innerHTML = '<div class="loading">No wishes found.</div>';
+          return;
+        }
+        
+        container.innerHTML = result.data.map(wish => `
+          <div class="rsvp-item">
+            <div class="rsvp-details">
+              <h3>${wish.message_type} from ${wish.name}</h3>
+              <p><strong>Email:</strong> ${wish.email}</p>
+              ${wish.relationship ? `<p><strong>Relationship:</strong> ${wish.relationship}</p>` : ''}
+              <p><strong>Message:</strong> "${wish.message}"</p>
+              <p><strong>Sent:</strong> ${new Date(wish.created_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <span class="attendance-badge attending">💝 Wish</span>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Error loading wishes:', error);
+        errorContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.innerHTML = '<div class="loading">Failed to load wishes.</div>';
+      }
+    }
+    
+    function filterWishes(messageType) {
+      loadWishes(messageType);
+    }
+    
+    // Load initial data
     loadRSVPs();
   </script>
 </body>
