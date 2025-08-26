@@ -42,11 +42,20 @@ exports.handler = async (event, context) => {
     // Validate required fields for file upload
     const { name, email, file_data, filename, file_type } = data;
     if (!name || !email || !file_data || !filename || !file_type) {
+      console.error('Missing required fields:', {
+        hasName: !!name,
+        hasEmail: !!email, 
+        hasFileData: !!file_data,
+        hasFilename: !!filename,
+        hasFileType: !!file_type,
+        receivedKeys: Object.keys(data)
+      });
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: 'Missing required fields: name, email, file_data, filename, and file_type are required' 
+          error: 'Missing required fields: name, email, file_data, filename, and file_type are required',
+          details: process.env.NODE_ENV === 'development' ? `Received keys: ${Object.keys(data).join(', ')}` : undefined
         }),
       };
     }
@@ -71,17 +80,80 @@ exports.handler = async (event, context) => {
     }
 
     // Extract base64 data (remove data:image/jpeg;base64, prefix)
-    const base64Data = file_data.replace(/^data:[^;]+;base64,/, '');
-    
-    // Convert base64 to buffer to check file size (rough estimate)
-    const fileSizeBytes = (base64Data.length * 3) / 4;
-    const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-    
-    if (fileSizeBytes > maxSizeBytes) {
+    let base64Data;
+    try {
+      if (file_data.startsWith('data:')) {
+        base64Data = file_data.replace(/^data:[^;]+;base64,/, '');
+      } else {
+        base64Data = file_data;
+      }
+      
+      // Validate base64 format
+      if (!base64Data || base64Data.length === 0) {
+        throw new Error('Invalid file data: base64 content is empty');
+      }
+      
+      // Basic base64 validation
+      const base64Regex = /^[A-Za-z0-9+/]*(=|==)?$/;
+      if (!base64Regex.test(base64Data.replace(/\s/g, ''))) {
+        throw new Error('Invalid file data: not valid base64 format');
+      }
+    } catch (error) {
+      console.error('Base64 processing error:', {
+        error: error.message,
+        fileDataLength: file_data?.length || 0,
+        fileDataStart: file_data?.substring(0, 100) || 'N/A'
+      });
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'File size exceeds 10MB limit' }),
+        body: JSON.stringify({ 
+          error: 'Invalid file format. Please try uploading the file again.',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        }),
+      };
+    }
+    
+    // Convert base64 to buffer to check file size (more accurate calculation)
+    let fileSizeBytes;
+    try {
+      // Remove any whitespace from base64 string
+      const cleanBase64 = base64Data.replace(/\s/g, '');
+      
+      // Calculate file size accounting for padding
+      const padding = cleanBase64.endsWith('==') ? 2 : (cleanBase64.endsWith('=') ? 1 : 0);
+      fileSizeBytes = (cleanBase64.length * 3) / 4 - padding;
+      
+      console.log('File size calculation:', {
+        base64Length: cleanBase64.length,
+        padding: padding,
+        calculatedSizeBytes: fileSizeBytes,
+        calculatedSizeMB: (fileSizeBytes / (1024 * 1024)).toFixed(2)
+      });
+    } catch (error) {
+      console.error('File size calculation error:', error);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Unable to process file. Please try again.' }),
+      };
+    }
+    
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+    
+    if (fileSizeBytes > maxSizeBytes) {
+      console.log('File size exceeded limit:', {
+        fileSizeBytes,
+        maxSizeBytes,
+        fileSizeMB: (fileSizeBytes / (1024 * 1024)).toFixed(2)
+      });
+      return {
+        statusCode: 413,
+        headers,
+        body: JSON.stringify({ 
+          error: `File size (${(fileSizeBytes / (1024 * 1024)).toFixed(2)}MB) exceeds 10MB limit. Please compress your image or use a smaller file.`,
+          details: process.env.NODE_ENV === 'development' ? `Actual size: ${fileSizeBytes} bytes` : undefined
+        }),
       };
     }
 

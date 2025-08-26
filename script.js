@@ -1118,20 +1118,43 @@ photoForm?.addEventListener('submit', async (e) => {
       // Handle URL submission with validation
       const photoUrl = formData.get('photo_url');
       
-      // Enhanced URL validation
+      // Enhanced URL validation for photo sharing platforms
       if (!photoUrl || photoUrl.trim() === '') {
         throw new Error('Please provide a photo URL');
       }
       
-      // Check if URL is accessible (basic validation)
+      const trimmedUrl = photoUrl.trim();
+      
+      // Check basic URL format
       const urlPattern = /^https?:\/\/.+/;
-      if (!urlPattern.test(photoUrl)) {
+      if (!urlPattern.test(trimmedUrl)) {
         throw new Error('Please provide a valid URL starting with http:// or https://');
       }
       
-      // Warn about common URL issues
-      if (photoUrl.includes('photos.google.com') && !photoUrl.includes('/u/0/') && !photoUrl.includes('share')) {
-        console.warn('Google Photos URL may require sharing permissions');
+      // Check for common photo sharing platforms and provide helpful tips
+      const isGooglePhotos = trimmedUrl.includes('photos.google.com') || 
+                            trimmedUrl.includes('photos.app.goo.gl') ||
+                            trimmedUrl.includes('drive.google.com');
+                            
+      const isICloudPhotos = trimmedUrl.includes('icloud.com/photos') ||
+                            trimmedUrl.includes('share.icloud.com');
+                            
+      const isDropbox = trimmedUrl.includes('dropbox.com') ||
+                       trimmedUrl.includes('db.tt');
+      
+      // Validate domain structure
+      const domainRegex = /^https?:\/\/[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}(\/.*)*/;
+      if (!domainRegex.test(trimmedUrl)) {
+        throw new Error('Please provide a valid photo sharing URL. Supported platforms: Google Photos, iCloud, Dropbox, or direct image links.');
+      }
+      
+      // Provide platform-specific tips but don't block submission
+      if (isGooglePhotos) {
+        console.log('📸 Google Photos detected: Make sure the link is set to "Anyone with the link can view"');
+      } else if (isICloudPhotos) {
+        console.log('☁️ iCloud Photos detected: Ensure the album is shared publicly');
+      } else if (isDropbox) {
+        console.log('📁 Dropbox detected: Make sure the link has public access');
       }
       
       const photoData = {
@@ -1199,10 +1222,18 @@ photoForm?.addEventListener('submit', async (e) => {
           successCount++;
           console.log(`Successfully uploaded file ${i + 1}:`, result);
         } else {
-          console.error(`Failed to upload file ${i + 1}:`, result.error || 'Unknown error');
-          console.error('Upload response status:', response.status);
-          console.error('Upload response:', result);
-          console.error('Upload data size:', JSON.stringify(uploadData).length, 'characters');
+          console.error(`Failed to upload file ${i + 1}:`, {
+            status: response.status,
+            error: result.error || 'Unknown error',
+            result: result,
+            fileSize: Math.round(file.size / 1024) + 'KB',
+            fileName: file.name,
+            fileType: file.type
+          });
+          
+          // Show specific error for this file
+          const fileError = result.error || 'Upload failed';
+          console.error(`File "${file.name}" failed: ${fileError}`);
         }
       }
       
@@ -1211,16 +1242,25 @@ photoForm?.addEventListener('submit', async (e) => {
       } else if (successCount > 0) {
         showPhotoSuccess(`Uploaded ${successCount} of ${totalFiles} photos. Some uploads may have failed.`);
       } else {
-        // Offer fallback to URL sharing with better error messaging
+        // Offer fallback to URL sharing with detailed guidance
         console.log('File upload failed for all files, offering URL fallback');
-        const useUrlFallback = confirm('File upload failed. Would you like to try sharing via URL instead?\n\nYou can upload your photos to Google Photos, iCloud, or Dropbox and share the link.');
+        
+        // Create a detailed error message with platform guidance
+        const failureMessage = `File upload failed. Would you like to share via URL instead?\n\n📸 Here's how:\n\n✅ Google Photos: Upload photos → Select album → Click "Share" → Copy link\n✅ iCloud Photos: Upload to Shared Album → Copy sharing link\n✅ Dropbox: Upload files → Right-click → "Copy Dropbox link"\n\nMake sure links are set to public/viewable by anyone.`;
+        
+        const useUrlFallback = confirm(failureMessage);
         if (useUrlFallback) {
-          // Switch to URL method
-          currentUploadMethod = 'url';
           selectUploadMethod('url');
-          return; // Don't throw error, let user try URL method
+          
+          // Show helpful message in URL field
+          const urlInput = document.getElementById('photo-url');
+          if (urlInput) {
+            urlInput.placeholder = 'Paste your Google Photos, iCloud, or Dropbox link here...';
+            urlInput.focus();
+          }
+          return;
         } else {
-          throw new Error('Failed to upload any photos. Please try again.');
+          throw new Error('Upload failed. Please try with smaller files or check your internet connection.');
         }
       }
     }

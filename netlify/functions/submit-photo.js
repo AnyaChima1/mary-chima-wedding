@@ -61,13 +61,52 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate URL format
+    // Enhanced URL validation for various photo sharing platforms
     const urlRegex = /^https?:\/\/.+/;
     if (!urlRegex.test(photo_url)) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: 'Please provide a valid URL starting with http:// or https://' }),
+      };
+    }
+
+    // Additional validation for common photo sharing platforms
+    const trimmedUrl = photo_url.trim();
+    
+    // Google Photos URL patterns
+    const isGooglePhotos = trimmedUrl.includes('photos.google.com') || 
+                          trimmedUrl.includes('photos.app.goo.gl') ||
+                          trimmedUrl.includes('drive.google.com');
+    
+    // iCloud Photos URL patterns  
+    const isICloudPhotos = trimmedUrl.includes('icloud.com/photos') ||
+                          trimmedUrl.includes('share.icloud.com');
+    
+    // Dropbox URL patterns
+    const isDropbox = trimmedUrl.includes('dropbox.com') ||
+                     trimmedUrl.includes('db.tt');
+    
+    // OneDrive URL patterns
+    const isOneDrive = trimmedUrl.includes('1drv.ms') ||
+                      trimmedUrl.includes('onedrive.live.com');
+    
+    // Allow common image hosting and direct image URLs
+    const isDirectImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(trimmedUrl);
+    const isImageHost = trimmedUrl.includes('imgur.com') ||
+                       trimmedUrl.includes('cloudinary.com') ||
+                       trimmedUrl.includes('imagekit.io') ||
+                       trimmedUrl.includes('unsplash.com');
+    
+    // Basic domain validation - ensure it has a valid domain structure
+    const domainRegex = /^https?:\/\/[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}(\/.*)*/;
+    if (!domainRegex.test(trimmedUrl)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Please provide a valid photo sharing URL from Google Photos, iCloud, Dropbox, or direct image link'
+        }),
       };
     }
 
