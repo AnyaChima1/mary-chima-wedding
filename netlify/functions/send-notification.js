@@ -52,12 +52,27 @@ exports.handler = async (event, context) => {
     }
 
     const { recipient_ids, message, subject, notification_type } = data;
+    
+    console.log('Notification request received:', {
+      recipient_ids: recipient_ids,
+      subject: subject,
+      message_length: message?.length,
+      notification_type: notification_type
+    });
+    
     if (!recipient_ids || !Array.isArray(recipient_ids) || !message || !subject) {
+      console.error('Missing required fields:', { 
+        recipient_ids: !!recipient_ids, 
+        is_array: Array.isArray(recipient_ids),
+        message: !!message, 
+        subject: !!subject 
+      });
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: 'Missing required fields: recipient_ids, message, and subject are required' 
+          success: false,
+          error: 'Missing required fields: recipient_ids (array), message, and subject are required' 
         }),
       };
     }
@@ -93,6 +108,20 @@ exports.handler = async (event, context) => {
       SELECT id, name, email FROM rsvps 
       WHERE id = ANY(${recipient_ids}) AND attendance = 'yes'
     `;
+
+    if (recipients.length === 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          success: false,
+          error: 'No valid attending recipients found for the provided IDs. Please ensure guests have RSVP\'d as attending.',
+          details: `Searched for IDs: ${recipient_ids.join(', ')}`
+        }),
+      };
+    }
+
+    console.log(`Found ${recipients.length} recipients:`, recipients.map(r => `${r.name} (${r.email})`));
 
     // Store notification records and send actual emails
     let sentCount = 0;
@@ -182,6 +211,8 @@ exports.handler = async (event, context) => {
 </html>`;
 
           // Send email via SendGrid API
+          console.log(`Sending email to ${recipient.email} via SendGrid API...`);
+          
           const emailResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
@@ -201,7 +232,11 @@ exports.handler = async (event, context) => {
             })
           });
           
+          console.log(`SendGrid API response status: ${emailResponse.status}`);
+          
           if (emailResponse.ok || emailResponse.status === 202) {
+            console.log(`✅ Email sent successfully to ${recipient.email}`);
+            
             // Update notification status to sent
             await sql`
               UPDATE notifications 
@@ -218,8 +253,20 @@ exports.handler = async (event, context) => {
             
             sentCount++;
           } else {
-            const emailError = await emailResponse.text();
-            emailErrors.push(`${recipient.name} (${recipient.email}): ${emailError}`);
+            const emailErrorText = await emailResponse.text();
+            console.error(`❌ SendGrid API error for ${recipient.email}: Status ${emailResponse.status}, Response: ${emailErrorText}`);
+            
+            let errorMessage = `SendGrid API error (${emailResponse.status})`;
+            try {
+              const errorJson = JSON.parse(emailErrorText);
+              if (errorJson.errors && errorJson.errors.length > 0) {
+                errorMessage = errorJson.errors.map(e => e.message).join('; ');
+              }
+            } catch (e) {
+              errorMessage += `: ${emailErrorText.substring(0, 100)}`;
+            }
+            
+            emailErrors.push(`${recipient.name} (${recipient.email}): ${errorMessage}`);
             
             // Update notification status to failed
             await sql`
@@ -253,11 +300,19 @@ exports.handler = async (event, context) => {
       method: emailMethod,
       message: sentCount === recipients.length 
         ? `All ${sentCount} notifications sent successfully via ${emailMethod}!`
-        : `${sentCount} of ${recipients.length} notifications sent successfully via ${emailMethod}`,
+        : sentCount > 0
+        ? `${sentCount} of ${recipients.length} notifications sent successfully via ${emailMethod}`
+        : `Failed to send any emails. Check error details below.`,
       sentCount,
       totalRecipients: recipients.length,
       recipients: recipients.map(r => ({ id: r.id, name: r.name, email: r.email })),
-      errors: emailErrors.length > 0 ? emailErrors : undefined
+      errors: emailErrors.length > 0 ? emailErrors : undefined,
+      // Include specific error when no emails sent
+      error: sentCount === 0 
+        ? (emailErrors.length > 0 
+            ? `Email sending failed: ${emailErrors[0].split(': ')[1] || emailErrors[0]}` 
+            : 'No emails were sent. Please check your configuration.')
+        : undefined
     };
 
     return {
@@ -267,14 +322,38 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Notification error:', error);
+    console.error('Notification function error:', error);
+    
+    // Provide more specific error information
+    let errorMessage = 'Internal server error. Please try again later.';
+    let errorDetails = undefined;
+    
+    if (error.message) {
+      if (error.message.includes('DATABASE_URL')) {
+        errorMessage = 'Database connection error. Please check database configuration.';
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Network error while sending emails. Please check internet connection.';
+      } else if (error.message.includes('JSON')) {
+        errorMessage = 'Invalid request format. Please check your input data.';
+      } else {
+        errorMessage = `Server error: ${error.message}`;
+      }
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      errorDetails = {
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n')
+      };
+    }
     
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Internal server error. Please try again later.',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        success: false,
+        error: errorMessage,
+        details: errorDetails
       }),
     };
   }

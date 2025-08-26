@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Test - Mary & Chima Wedding</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; color: #2e7d2e; }
+        .error { background: #ffebee; border: 1px solid #f44336; color: #c62828; }
+        .info { background: #e3f2fd; border: 1px solid #2196f3; color: #1976d2; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Email System Test</h1>
+    <p>Use this page to test and debug the email sending functionality.</p>
+    
+    <!-- Step 1: Test RSVP Data -->
+    <div class="test-section">
+        <h2>📋 Step 1: Check RSVP Data</h2>
+        <p>First, let's verify we have attending guests in the database.</p>
+        <button onclick="testRSVPData()">🔍 Check RSVPs</button>
+        <div id="rsvp-results"></div>
+    </div>
+    
+    <!-- Step 2: Test Direct Email Sending -->
+    <div class="test-section">
+        <h2>📧 Step 2: Test Email Sending</h2>
+        <p>Test sending an email to yourself first.</p>
+        
+        <div style="margin: 10px 0;">
+            <label>Your Email (for testing):</label>
+            <input type="email" id="test-email" placeholder="your-email@example.com" required>
+        </div>
+        
+        <div style="margin: 10px 0;">
+            <label>Subject:</label>
+            <input type="text" id="test-subject" value="Test Wedding Notification" required>
+        </div>
+        
+        <div style="margin: 10px 0;">
+            <label>Message:</label>
+            <textarea id="test-message" rows="3" required>This is a test message to verify the email system is working correctly.</textarea>
+        </div>
+        
+        <button onclick="testEmailSending()">📧 Send Test Email</button>
+        <div id="email-results"></div>
+    </div>
+    
+    <!-- Step 3: Test with Real Recipients -->
+    <div class="test-section">
+        <h2>👥 Step 3: Test with RSVP Recipients</h2>
+        <p>Select actual RSVP recipients to send a test notification.</p>
+        
+        <div id="recipient-selector" style="margin: 10px 0;">
+            <select id="real-recipients" multiple style="height: 120px; width: 100%;">
+                <!-- Will be populated with attending guests -->
+            </select>
+            <small>Hold Ctrl/Cmd to select multiple recipients</small>
+        </div>
+        
+        <div style="margin: 10px 0;">
+            <label>Subject:</label>
+            <input type="text" id="real-subject" value="Test Wedding Update" required>
+        </div>
+        
+        <div style="margin: 10px 0;">
+            <label>Message:</label>
+            <textarea id="real-message" rows="3" required>This is a test notification from our wedding website system. Please ignore this message.</textarea>
+        </div>
+        
+        <button onclick="testRealNotification()">📧 Send to Selected Recipients</button>
+        <div id="real-results"></div>
+    </div>
+    
+    <!-- Step 4: Raw API Test -->
+    <div class="test-section">
+        <h2>🔧 Step 4: Raw API Test</h2>
+        <p>Direct API call with detailed response logging.</p>
+        <button onclick="testRawAPI()">⚡ Test Raw API</button>
+        <div id="raw-results"></div>
+    </div>
+
+    <script>
+        const adminPassword = 'Mary&Chima0003';
+        let attendingGuests = [];
+        
+        // Test RSVP data
+        async function testRSVPData() {
+            const resultsDiv = document.getElementById('rsvp-results');
+            resultsDiv.innerHTML = '<div class="info">🔍 Checking RSVP data...</div>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/get-rsvps', {
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                
+                const result = await response.json();
+                console.log('RSVP Data:', result);
+                
+                if (result.success && result.data) {
+                    attendingGuests = result.data.filter(guest => guest.attendance === 'yes');
+                    
+                    let html = `<div class="success">✅ Found ${result.data.length} total RSVPs, ${attendingGuests.length} attending</div>`;
+                    
+                    if (attendingGuests.length > 0) {
+                        html += '<div class="info"><strong>Attending Guests:</strong><br>';
+                        attendingGuests.forEach(guest => {
+                            html += `• ${guest.name} (${guest.email}) - ID: ${guest.id}<br>`;
+                        });
+                        html += '</div>';
+                        
+                        // Populate recipient selector
+                        const selector = document.getElementById('real-recipients');
+                        selector.innerHTML = '';
+                        attendingGuests.forEach(guest => {
+                            const option = document.createElement('option');
+                            option.value = guest.id;
+                            option.textContent = `${guest.name} (${guest.email})`;
+                            selector.appendChild(option);
+                        });
+                    } else {
+                        html += '<div class="error">❌ No attending guests found. Make sure someone has RSVP\'d as "yes".</div>';
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Error fetching RSVPs: ${result.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                console.error('RSVP test error:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+        
+        // Test email sending with manual email
+        async function testEmailSending() {
+            const email = document.getElementById('test-email').value;
+            const subject = document.getElementById('test-subject').value;
+            const message = document.getElementById('test-message').value;
+            
+            if (!email || !subject || !message) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('email-results');
+            resultsDiv.innerHTML = '<div class="info">📧 Sending test email...</div>';
+            
+            // First, create a temporary RSVP record for testing
+            try {
+                const testData = {
+                    recipient_ids: [999999], // Use a fake ID that won't exist
+                    subject: subject,
+                    message: message,
+                    notification_type: 'test'
+                };
+                
+                console.log('Sending test notification:', testData);
+                
+                const response = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                console.log('Test email response:', result);
+                
+                let html = `<div class="${result.success ? 'success' : 'error'}">`;
+                html += result.success ? '✅ ' : '❌ ';
+                html += result.message || result.error || 'Unknown response';
+                html += '</div>';
+                
+                if (result.errors && result.errors.length > 0) {
+                    html += '<div class="error"><strong>Errors:</strong><br>';
+                    result.errors.forEach(error => {
+                        html += `• ${error}<br>`;
+                    });
+                    html += '</div>';
+                }
+                
+                html += '<div class="info"><strong>Full Response:</strong><pre>' + JSON.stringify(result, null, 2) + '</pre></div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Test email error:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+        
+        // Test with real recipients
+        async function testRealNotification() {
+            const selectedOptions = Array.from(document.getElementById('real-recipients').selectedOptions);
+            const subject = document.getElementById('real-subject').value;
+            const message = document.getElementById('real-message').value;
+            
+            if (selectedOptions.length === 0) {
+                alert('Please select at least one recipient');
+                return;
+            }
+            
+            if (!subject || !message) {
+                alert('Please fill in subject and message');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('real-results');
+            resultsDiv.innerHTML = '<div class="info">📧 Sending to selected recipients...</div>';
+            
+            try {
+                const testData = {
+                    recipient_ids: selectedOptions.map(option => parseInt(option.value)),
+                    subject: subject,
+                    message: message,
+                    notification_type: 'test'
+                };
+                
+                console.log('Sending real notification:', testData);
+                
+                const response = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                console.log('Real notification response:', result);
+                
+                let html = `<div class="${result.success ? 'success' : 'error'}">`;
+                html += result.success ? '✅ ' : '❌ ';
+                html += result.message || result.error || 'Unknown response';
+                html += '</div>';
+                
+                if (result.method) {
+                    html += `<div class="info"><strong>Email Method:</strong> ${result.method}</div>`;
+                }
+                
+                if (result.sentCount !== undefined && result.totalRecipients !== undefined) {
+                    html += `<div class="info"><strong>Success Rate:</strong> ${result.sentCount}/${result.totalRecipients}</div>`;
+                }
+                
+                if (result.errors && result.errors.length > 0) {
+                    html += '<div class="error"><strong>Errors:</strong><br>';
+                    result.errors.forEach(error => {
+                        html += `• ${error}<br>`;
+                    });
+                    html += '</div>';
+                }
+                
+                html += '<div class="info"><strong>Full Response:</strong><pre>' + JSON.stringify(result, null, 2) + '</pre></div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Real notification error:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+        
+        // Raw API test
+        async function testRawAPI() {
+            const resultsDiv = document.getElementById('raw-results');
+            resultsDiv.innerHTML = '<div class="info">⚡ Testing raw API...</div>';
+            
+            try {
+                // Test with minimal data
+                const testData = {
+                    recipient_ids: [1], // Try with ID 1
+                    subject: 'Raw API Test',
+                    message: 'This is a raw API test message.',
+                    notification_type: 'test'
+                };
+                
+                console.log('Raw API test data:', testData);
+                
+                const response = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('Raw API response status:', response.status);
+                console.log('Raw API response headers:', Object.fromEntries(response.headers));
+                
+                const result = await response.json();
+                console.log('Raw API response body:', result);
+                
+                let html = '<div class="info"><strong>Response Details:</strong><br>';
+                html += `• Status: ${response.status}<br>`;
+                html += `• Success: ${result.success}<br>`;
+                html += `• Message: ${result.message || 'None'}<br>`;
+                html += `• Error: ${result.error || 'None'}<br>`;
+                html += '</div>';
+                
+                html += '<div class="info"><strong>Full Response:</strong><pre>' + JSON.stringify(result, null, 2) + '</pre></div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Raw API error:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}<br>Stack: ${error.stack}</div>`;
+            }
+        }
+        
+        // Load RSVP data on page load
+        window.addEventListener('load', function() {
+            testRSVPData();
+        });
+    </script>
+</body>
+</html>
