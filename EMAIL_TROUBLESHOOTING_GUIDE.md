@@ -28,13 +28,13 @@ git push origin main
 
 ## 🔍 **COMMON ISSUES & SOLUTIONS**
 
-### **Issue 1: API Key Already Revoked Again**
-**Symptoms:** API Test shows 401/403 errors
-**Solution:** Get a fresh API key from SendGrid
+### **Issue 1: Service Credentials Already Revoked**
+**Symptoms:** Service Test shows 401/403 errors
+**Solution:** Get fresh credentials from email service provider
 ```javascript
 // Update in email-config.js using the helper function
 const emailConfig = require('./email-config');
-emailConfig.security.encodeApiKey('SG.your-new-key-here');
+emailConfig.utils.encodeCredentials('NEW-CREDENTIAL-HERE');
 ```
 
 ### **Issue 2: Changes Not Deployed**
@@ -59,12 +59,12 @@ npm list
 # Ensure @netlify/neon is installed
 ```
 
-### **Issue 5: SendGrid Account Issues**
-**Symptoms:** Valid API key but connection fails
+### **Issue 5: Email Service Account Issues**
+**Symptoms:** Valid credentials but connection fails
 **Possible causes:**
 - Account suspended
 - Domain verification expired
-- API key permissions insufficient
+- Credential permissions insufficient
 
 ## 🛠️ **SYSTEMATIC DEBUGGING APPROACH**
 
@@ -83,17 +83,17 @@ git push origin main
 2. Functions → View function logs
 3. Look for console.log outputs from email functions
 
-### **3. Verify SendGrid Account**
-1. Login to SendGrid dashboard
-2. Check API Keys section - ensure your key is active
+### **3. Verify Email Service Account**
+1. Login to email service dashboard
+2. Check credentials section - ensure your credential is active
 3. Check Domain Authentication - ensure info@maryandchima.love is verified
 4. Check account status for any suspensions
 
-### **4. Test API Key Manually**
+### **4. Test Credentials Manually**
 ```bash
-# Test the API key directly with curl:
+# Test the credentials directly with curl:
 curl -X GET "https://api.sendgrid.com/v3/user/profile" \
-  -H "Authorization: Bearer SG.your-api-key-here"
+  -H "Authorization: Bearer your-credential-here"
 ```
 
 ## 📋 **DIAGNOSTIC CHECKLIST**
@@ -102,20 +102,20 @@ Run through this checklist systematically:
 
 - [ ] **Changes Deployed**: Latest code is live on Netlify
 - [ ] **Diagnostics Pass**: `/test-email.html` Step 0 shows green results
-- [ ] **API Key Valid**: SendGrid dashboard shows key is active
-- [ ] **Account Active**: No SendGrid account issues
+- [ ] **Credentials Valid**: Email service dashboard shows credential is active
+- [ ] **Account Active**: No email service account issues
 - [ ] **Domain Verified**: info@maryandchima.love is verified
 - [ ] **Functions Working**: No 500 errors in Netlify logs
 - [ ] **RSVP Data Exists**: At least one guest with attendance='yes'
 
 ## 🎯 **NEXT ACTIONS BASED ON DIAGNOSTICS**
 
-### **If API Key Test Fails:**
-1. Get new API key from SendGrid
+### **If Credentials Test Fails:**
+1. Get new credentials from email service provider
 2. Use the encoding helper to update configuration
 3. Redeploy and test
 
-### **If API Key Test Passes but Email Sending Fails:**
+### **If Credentials Test Passes but Email Sending Fails:**
 1. Check RSVP data - ensure guests exist with attendance='yes'
 2. Check function logs for specific error messages
 3. Test with /test-email.html Step 3

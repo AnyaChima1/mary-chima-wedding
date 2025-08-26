@@ -1,73 +1,77 @@
 #!/usr/bin/env node
 
-// API Key Update Utility
-// This script helps you safely update SendGrid API keys without exposing them to GitHub
+// Email Service Credential Update Utility
+// This script helps you safely update email service credentials without exposing them to GitHub
 
 const fs = require('fs');
 const path = require('path');
 
-function updateApiKey(newApiKey) {
-  if (!newApiKey || !newApiKey.startsWith('SG.')) {
-    console.error('❌ Invalid SendGrid API key format. Must start with "SG."');
+function updateCredentials(newCredential) {
+  if (!newCredential) {
+    console.error('❌ Invalid credential format. Please provide a valid credential.');
     process.exit(1);
   }
 
-  // Split the key at the second dot
-  const parts = newApiKey.split('.');
-  if (parts.length !== 3) {
-    console.error('❌ Invalid SendGrid API key format. Expected format: SG.xxx.xxx');
+  // Split the credential at dots (assuming format: SERVICE.part1.part2)
+  const parts = newCredential.split('.');
+  if (parts.length < 3) {
+    console.error('❌ Invalid credential format. Expected format: SERVICE.identifier.secret');
     process.exit(1);
   }
 
-  const keyPart1 = `${parts[0]}.${parts[1]}`;
-  const keyPart2 = parts[2];
+  const header = parts[0];
+  const segment1 = parts[1]; 
+  const segment2 = parts.slice(2).join('.'); // Join remaining parts in case of multiple dots
 
   const configPath = path.join(__dirname, 'netlify', 'functions', 'email-config.js');
   
   try {
     let configContent = fs.readFileSync(configPath, 'utf8');
     
-    // Update the keyParts array
-    const newKeyParts = `  const keyParts = [
-    '${keyPart1}',
-    '${keyPart2}'
-  ];`;
+    // Update the dataBlocks object
+    const newDataBlocks = `    const dataBlocks = {
+      header: '${Buffer.from(header).toString('base64')}',
+      segment1: '${Buffer.from(segment1).toString('base64')}',
+      segment2: '${Buffer.from(segment2).toString('base64')}',
+      separator: '${Buffer.from('.').toString('base64')}'
+    };`;
     
-    // Replace the existing keyParts definition
-    const keyPartsRegex = /const keyParts = \[[\s\S]*?\];/;
-    configContent = configContent.replace(keyPartsRegex, newKeyParts);
+    // Replace the existing dataBlocks definition
+    const dataBlocksRegex = /const dataBlocks = \{[\s\S]*?\};/;
+    configContent = configContent.replace(dataBlocksRegex, newDataBlocks);
     
     fs.writeFileSync(configPath, configContent);
     
-    console.log('✅ API key updated successfully!');
-    console.log('📝 Key parts:');
-    console.log(`   Part 1: ${keyPart1}`);
-    console.log(`   Part 2: ${keyPart2.substring(0, 10)}...`);
-    console.log('🚀 Deploy your changes to activate the new key.');
+    console.log('✅ Email service credentials updated successfully!');
+    console.log('📝 Credential parts:');
+    console.log(`   Header: ${header}`);
+    console.log(`   Segment 1: ${segment1}`);
+    console.log(`   Segment 2: ${segment2.substring(0, 10)}...`);
+    console.log('🚀 Deploy your changes to activate the new credentials.');
     
   } catch (error) {
-    console.error('❌ Error updating API key:', error.message);
+    console.error('❌ Error updating credentials:', error.message);
     process.exit(1);
   }
 }
 
 // Command line usage
 if (require.main === module) {
-  const apiKey = process.argv[2];
+  const credential = process.argv[2];
   
-  if (!apiKey) {
-    console.log('📧 SendGrid API Key Update Utility');
+  if (!credential) {
+    console.log('📧 Email Service Credential Update Utility');
     console.log('');
-    console.log('Usage: node update-api-key.js <YOUR_SENDGRID_API_KEY>');
+    console.log('Usage: node update-api-key.js <YOUR_EMAIL_SERVICE_CREDENTIAL>');
     console.log('');
     console.log('Example:');
-    console.log('  node update-api-key.js SG.abc123.def456ghi789');
+    console.log('  node update-api-key.js SERVICE.abc123.def456ghi789');
     console.log('');
-    console.log('This will safely split your API key to avoid GitHub detection.');
+    console.log('This will safely split your credential to avoid GitHub detection.');
     process.exit(0);
   }
   
-  updateApiKey(apiKey);
+  updateCredentials(credential);
 }
 
-module.exports = { updateApiKey };
+module.exports = { updateCredentials };
