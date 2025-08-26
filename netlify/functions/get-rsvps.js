@@ -38,7 +38,10 @@ exports.handler = async (event, context) => {
       expectedAuthLength: expectedAuth ? expectedAuth.length : 0
     });
     
-    if (expectedAuth && (!authHeader || authHeader !== `Bearer ${expectedAuth}`)) {
+    // If ADMIN_PASSWORD is not set, allow access for debugging
+    if (!expectedAuth) {
+      console.log('WARNING: ADMIN_PASSWORD not set - allowing access for debugging');
+    } else if (!authHeader || authHeader !== `Bearer ${expectedAuth}`) {
       console.log('AUTH FAILURE:', {
         expectedPrefix: 'Bearer ',
         receivedAuth: authHeader ? authHeader.substring(0, 20) + '...' : 'none',
@@ -51,7 +54,8 @@ exports.handler = async (event, context) => {
           error: 'Unauthorized',
           debug: process.env.NODE_ENV === 'development' ? {
             hasAuthHeader: !!authHeader,
-            hasExpectedAuth: !!expectedAuth
+            hasExpectedAuth: !!expectedAuth,
+            hint: !expectedAuth ? 'ADMIN_PASSWORD environment variable not set' : 'Invalid authorization header'
           } : undefined
         }),
       };

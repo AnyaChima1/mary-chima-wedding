@@ -16,6 +16,18 @@
 <body>
     <h1>🔧 RSVP Admin Dashboard Test</h1>
     
+    <div class="test-section" style="background: #e3f2fd; border-color: #2196f3;">
+        <h2>📝 Setup Guide</h2>
+        <p>If authentication is failing, you need to set up the environment variable:</p>
+        <ol>
+            <li>Go to your Netlify dashboard</li>
+            <li>Navigate to your site → Site settings → Environment variables</li>
+            <li>Add a new variable: <code>ADMIN_PASSWORD</code> = <code>Mary&Chima0003</code></li>
+            <li>Deploy your site or trigger a function rebuild</li>
+        </ol>
+        <p><strong>Note:</strong> Without this environment variable, the admin authentication won't work properly.</p>
+    </div>
+    
     <div class="test-section">
         <h2>Test 1: Debug Connection</h2>
         <p>This tests if the database and authentication are working correctly.</p>
@@ -64,12 +76,17 @@
                 
                 if (response.ok && result.success) {
                     resultDiv.className = 'result success';
+                    const authStatus = result.authentication.valid ? '✅ Valid' : '❌ Invalid';
+                    const authError = result.authentication.error ? `<br><small style="color: #d32f2f;">${result.authentication.error}</small>` : '';
+                    
                     resultDiv.innerHTML = `
                         <h4>✅ Debug Connection Successful</h4>
                         <p><strong>Database:</strong> ${result.database.connected ? '✅ Connected' : '❌ Not connected'}</p>
                         <p><strong>RSVP Table:</strong> ${result.database.tableExists ? '✅ Exists' : '❌ Missing'}</p>
                         <p><strong>Record Count:</strong> ${result.database.recordCount || 0}</p>
-                        <p><strong>Authentication:</strong> ${result.authentication.valid ? '✅ Valid' : '❌ Invalid'}</p>
+                        <p><strong>Authentication:</strong> ${authStatus}${authError}</p>
+                        ${!result.authentication.valid && result.authentication.details?.missingEnvVar ? 
+                          '<div style="background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 4px; margin: 10px 0;"><strong>⚠️ Setup Required:</strong> Set ADMIN_PASSWORD environment variable in Netlify to "Mary&Chima0003"</div>' : ''}
                         <details><summary>Full Details</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
                     `;
                 } else {

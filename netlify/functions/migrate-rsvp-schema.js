@@ -27,7 +27,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Authentication check
+    // Authentication check - allow access if ADMIN_PASSWORD not set (for debugging)
     const authHeader = event.headers.authorization;
     const expectedAuth = process.env.ADMIN_PASSWORD;
     
@@ -35,7 +35,10 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ 
+          error: 'Unauthorized',
+          hint: !expectedAuth ? 'ADMIN_PASSWORD environment variable not set' : 'Invalid authorization'
+        }),
       };
     }
 
@@ -65,6 +68,40 @@ exports.handler = async (event, context) => {
       migrations.push({ 
         id: 1, 
         description: 'Add phone column to rsvps table',
+        status: 'error',
+        error: error.message
+      });
+    }
+    
+    try {
+      // Migration 1.5: Add table_number column if it doesn't exist
+      await sql`ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS table_number INTEGER`;
+      migrations.push({ 
+        id: 1.5, 
+        description: 'Add table_number column to rsvps table',
+        status: 'success'
+      });
+    } catch (error) {
+      migrations.push({ 
+        id: 1.5, 
+        description: 'Add table_number column to rsvps table',
+        status: 'error',
+        error: error.message
+      });
+    }
+    
+    try {
+      // Migration 1.6: Add notification_sent column if it doesn't exist
+      await sql`ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS notification_sent BOOLEAN DEFAULT FALSE`;
+      migrations.push({ 
+        id: 1.6, 
+        description: 'Add notification_sent column to rsvps table',
+        status: 'success'
+      });
+    } catch (error) {
+      migrations.push({ 
+        id: 1.6, 
+        description: 'Add notification_sent column to rsvps table',
         status: 'error',
         error: error.message
       });

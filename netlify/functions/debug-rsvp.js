@@ -63,16 +63,30 @@ exports.handler = async (event, context) => {
     }
 
     // Test admin auth
-    let authTest = { valid: false, error: null };
+    let authTest = { valid: false, error: null, details: {} };
     const authHeader = event.headers.authorization;
     
-    if (adminPassword && authHeader) {
+    if (!adminPassword) {
+      authTest.error = 'ADMIN_PASSWORD environment variable not set';
+      authTest.details.missingEnvVar = true;
+    } else if (!authHeader) {
+      authTest.error = 'No Authorization header provided';
+      authTest.details.hasAuthHeader = false;
+    } else {
       const expectedAuth = `Bearer ${adminPassword}`;
       authTest.valid = authHeader === expectedAuth;
-      authTest.receivedHeader = authHeader.substring(0, 20) + '...';
-      authTest.expectedLength = expectedAuth.length;
-    } else {
-      authTest.error = !adminPassword ? 'ADMIN_PASSWORD not set' : 'No auth header provided';
+      authTest.details = {
+        hasAuthHeader: true,
+        receivedLength: authHeader.length,
+        expectedLength: expectedAuth.length,
+        receivedPrefix: authHeader.substring(0, 20) + '...',
+        expectedPrefix: expectedAuth.substring(0, 20) + '...',
+        matches: authHeader === expectedAuth
+      };
+      
+      if (!authTest.valid) {
+        authTest.error = 'Authorization header does not match expected value';
+      }
     }
 
     return {
