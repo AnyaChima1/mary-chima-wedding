@@ -699,7 +699,297 @@ songForm?.addEventListener('submit', async (e) => {
 });
 
 // ========================================
-// ENHANCED PHOTO SHARING & GALLERY FUNCTIONALITY
+// ENHANCED DEBUGGING AND ERROR LOGGING SYSTEM
+// ========================================
+
+// Centralized error logging system
+const ErrorLogger = {
+  logs: [],
+  
+  log: function(type, stage, message, data = {}) {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      timestamp,
+      type, // 'error', 'warning', 'info', 'debug'
+      stage,
+      message,
+      data,
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    };
+    
+    this.logs.push(logEntry);
+    
+    // Keep only last 100 logs to prevent memory issues
+    if (this.logs.length > 100) {
+      this.logs = this.logs.slice(-100);
+    }
+    
+    // Console output based on type
+    const consoleMessage = `[${timestamp}] ${stage}: ${message}`;
+    switch(type) {
+      case 'error':
+        console.error(consoleMessage, data);
+        break;
+      case 'warning':
+        console.warn(consoleMessage, data);
+        break;
+      case 'debug':
+        console.log(consoleMessage, data);
+        break;
+      default:
+        console.info(consoleMessage, data);
+    }
+  },
+  
+  getLogsForUser: function() {
+    return this.logs.map(log => ({
+      time: log.timestamp,
+      stage: log.stage,
+      type: log.type,
+      message: log.message,
+      data: typeof log.data === 'object' ? JSON.stringify(log.data) : log.data
+    }));
+  },
+  
+  exportLogs: function() {
+    const logs = this.getLogsForUser();
+    const logText = logs.map(log => 
+      `${log.time} [${log.type.toUpperCase()}] ${log.stage}: ${log.message}${log.data ? ' | Data: ' + log.data : ''}`
+    ).join('\n');
+    
+    // Create downloadable file
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wedding-site-debug-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+};
+
+// Add global error handler
+window.addEventListener('error', function(e) {
+  ErrorLogger.log('error', 'GLOBAL_ERROR', e.message, {
+    filename: e.filename,
+    lineno: e.lineno,
+    colno: e.colno,
+    stack: e.error?.stack
+  });
+});
+
+// Add unhandled promise rejection handler
+window.addEventListener('unhandledrejection', function(e) {
+  ErrorLogger.log('error', 'UNHANDLED_PROMISE', e.reason?.message || 'Promise rejected', {
+    reason: e.reason,
+    stack: e.reason?.stack
+  });
+});
+
+// Enhanced photo upload debugging
+const PhotoUploadDebugger = {
+  logUploadAttempt: function(method, data) {
+    ErrorLogger.log('info', 'UPLOAD_START', `Starting ${method} upload`, {
+      method,
+      hasName: !!data.name,
+      hasEmail: !!data.email,
+      hasUrl: !!data.photo_url,
+      hasFileData: !!data.file_data,
+      fileSize: data.file_data ? Math.round(data.file_data.length / 1024) + 'KB' : 'N/A',
+      fileName: data.filename || 'N/A'
+    });
+  },
+  
+  logValidationError: function(stage, error) {
+    ErrorLogger.log('error', 'VALIDATION_ERROR', error.message, { stage });
+  },
+  
+  logNetworkRequest: function(url, method, bodySize) {
+    ErrorLogger.log('debug', 'NETWORK_REQUEST', `${method} ${url}`, {
+      bodySize: bodySize ? Math.round(bodySize / 1024) + 'KB' : 'No body'
+    });
+  },
+  
+  logNetworkResponse: function(url, status, response) {
+    const isError = status >= 400;
+    ErrorLogger.log(isError ? 'error' : 'info', 'NETWORK_RESPONSE', 
+      `${status} response from ${url}`, {
+      status,
+      responseType: typeof response,
+      responseSize: typeof response === 'string' ? response.length + ' chars' : 'object',
+      error: isError ? response?.error : undefined,
+      requestId: response?.requestId
+    });
+  }
+};
+
+// Image resizing utility
+const ImageResizer = {
+  resizeImage: function(file, maxWidth = 800, maxHeight = 600, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+      ErrorLogger.log('debug', 'IMAGE_RESIZE_START', `Resizing ${file.name}`, {
+        originalSize: Math.round(file.size / 1024) + 'KB',
+        maxWidth,
+        maxHeight,
+        quality
+      });
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = function() {
+        // Calculate new dimensions
+        let { width, height } = img;
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            ErrorLogger.log('info', 'IMAGE_RESIZE_SUCCESS', `Resized ${file.name}`, {
+              originalSize: Math.round(file.size / 1024) + 'KB',
+              newSize: Math.round(blob.size / 1024) + 'KB',
+              dimensions: `${width}x${height}`,
+              compression: ((1 - blob.size / file.size) * 100).toFixed(1) + '%'
+            });
+            resolve(blob);
+          } else {
+            const error = new Error('Failed to compress image');
+            ErrorLogger.log('error', 'IMAGE_RESIZE_FAILED', error.message, { fileName: file.name });
+            reject(error);
+          }
+        }, file.type, quality);
+      };
+      
+      img.onerror = function() {
+        const error = new Error('Failed to load image for resizing');
+        ErrorLogger.log('error', 'IMAGE_LOAD_FAILED', error.message, { fileName: file.name });
+        reject(error);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  },
+  
+  createThumbnail: function(file, size = 150) {
+    return this.resizeImage(file, size, size, 0.7);
+  }
+};
+
+ErrorLogger.log('info', 'SYSTEM_INIT', 'Enhanced debugging system initialized');
+
+// ========================================
+// DEBUG CONSOLE FUNCTIONALITY
+// ========================================
+
+// Show debug console when errors occur
+function showDebugConsole() {
+  const debugConsole = document.getElementById('debug-console');
+  if (debugConsole) {
+    debugConsole.style.display = 'block';
+    updateDebugStats();
+  }
+}
+
+// Toggle debug panel
+function toggleDebugPanel() {
+  const panel = document.getElementById('debug-panel');
+  if (panel) {
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'block') {
+      updateDebugStats();
+    }
+  }
+}
+
+// Update debug statistics
+function updateDebugStats() {
+  const errorCount = ErrorLogger.logs.filter(log => log.type === 'error').length;
+  const requestCount = ErrorLogger.logs.filter(log => log.stage.includes('NETWORK')).length;
+  const lastLog = ErrorLogger.logs[ErrorLogger.logs.length - 1];
+  
+  const errorCountEl = document.getElementById('error-count');
+  const requestCountEl = document.getElementById('request-count');
+  const lastActivityEl = document.getElementById('last-activity');
+  
+  if (errorCountEl) errorCountEl.textContent = errorCount;
+  if (requestCountEl) requestCountEl.textContent = requestCount;
+  if (lastActivityEl && lastLog) {
+    const timeAgo = Math.round((Date.now() - new Date(lastLog.timestamp).getTime()) / 1000);
+    lastActivityEl.textContent = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.round(timeAgo/60)}m ago`;
+  }
+}
+
+// Download debug logs
+function downloadDebugLogs() {
+  if (ErrorLogger.logs.length === 0) {
+    alert('No debug logs to download. Try performing an action that causes an error first.');
+    return;
+  }
+  
+  ErrorLogger.exportLogs();
+  
+  // Show thank you message
+  const panel = document.getElementById('debug-panel');
+  if (panel) {
+    const originalContent = panel.innerHTML;
+    panel.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: #28a745;">✓ Logs Downloaded!</h4>
+      <p style="font-size: 14px; color: #666;">
+        Thank you! Please send this debug file when reporting the issue.
+      </p>
+      <button onclick="location.reload()" style="
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        width: 100%;
+        cursor: pointer;
+      ">
+        Refresh Page
+      </button>
+    `;
+  }
+}
+
+// Clear debug logs
+function clearDebugLogs() {
+  ErrorLogger.logs = [];
+  updateDebugStats();
+  alert('Debug logs cleared.');
+}
+
+// Override the original log function to trigger console display
+const originalLog = ErrorLogger.log;
+ErrorLogger.log = function(type, stage, message, data) {
+  originalLog.call(this, type, stage, message, data);
+  if (type === 'error') {
+    setTimeout(showDebugConsole, 100); // Small delay to ensure error is logged
+  }
+};
+
+// ========================================
+// ORIGINAL SCRIPTS CONTINUE BELOW
 // ========================================
 const photoModal = document.getElementById('photo-modal');
 const photoForm = document.getElementById('photo-form');

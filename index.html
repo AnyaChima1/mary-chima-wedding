@@ -368,6 +368,81 @@
     </section>
   </main>
 
+  <!-- Debug Console for Error Reporting -->
+  <div id="debug-console" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: none;">
+    <button id="debug-toggle" onclick="toggleDebugPanel()" style="
+      background: #ff6b6b; 
+      color: white; 
+      border: none; 
+      padding: 12px 16px; 
+      border-radius: 25px; 
+      cursor: pointer; 
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(255,107,107,0.3);
+      animation: pulse 2s infinite;
+    ">
+      🐛 Debug Panel
+    </button>
+    
+    <div id="debug-panel" style="
+      position: absolute;
+      bottom: 60px;
+      right: 0;
+      background: white;
+      border: 2px solid #ff6b6b;
+      border-radius: 12px;
+      padding: 20px;
+      width: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      display: none;
+    ">
+      <h4 style="margin: 0 0 15px 0; color: #ff6b6b;">🔧 Debug Tools</h4>
+      <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+        Having upload issues? Download debug logs to help us fix the problem.
+      </p>
+      
+      <div id="debug-stats" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 12px;">
+        <div>Errors: <span id="error-count">0</span></div>
+        <div>Network Requests: <span id="request-count">0</span></div>
+        <div>Last Activity: <span id="last-activity">None</span></div>
+      </div>
+      
+      <button onclick="downloadDebugLogs()" style="
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        width: 100%;
+        cursor: pointer;
+        margin-bottom: 10px;
+      ">
+        📥 Download Debug Logs
+      </button>
+      
+      <button onclick="clearDebugLogs()" style="
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        width: 100%;
+        cursor: pointer;
+        font-size: 12px;
+      ">
+        🗑️ Clear Logs
+      </button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+
   <footer class="footer">
     <div class="container footer__inner">
       <img src="assets/monogram_favicon_mary_chima.png" alt="Mary &amp; Chima monogram" />

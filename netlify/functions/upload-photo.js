@@ -1,11 +1,43 @@
 const { neon } = require('@netlify/neon');
 
+// Enhanced logging function
+const logDebug = (stage, data) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] UPLOAD-PHOTO DEBUG [${stage}]:`, JSON.stringify(data, null, 2));
+};
+
+const logError = (stage, error, context = {}) => {
+  const timestamp = new Date().toISOString();
+  console.error(`[${timestamp}] UPLOAD-PHOTO ERROR [${stage}]:`, {
+    error: {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    },
+    context,
+    timestamp
+  });
+};
+
 exports.handler = async (event, context) => {
+  const requestId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  logDebug('REQUEST_START', {
+    requestId,
+    method: event.httpMethod,
+    bodyLength: event.body?.length || 0,
+    headers: {
+      'content-type': event.headers?.['content-type'],
+      'user-agent': event.headers?.['user-agent']?.substring(0, 50) + '...' || 'unknown'
+    }
+  });
+  
   // Set CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'X-Request-ID': requestId
   };
 
   // Handle preflight requests
