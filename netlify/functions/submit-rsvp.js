@@ -74,9 +74,23 @@ exports.handler = async (event, context) => {
         guest_count INTEGER DEFAULT 1,
         guest_names TEXT,
         dietary_requirements TEXT,
-        special_message TEXT,
+        table_number INTEGER,
+        notification_sent BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `;
+
+    // Create individual guests table
+    await sql`
+      CREATE TABLE IF NOT EXISTS individual_guests (
+        id SERIAL PRIMARY KEY,
+        rsvp_id INTEGER REFERENCES rsvps(id) ON DELETE CASCADE,
+        guest_name VARCHAR(255) NOT NULL,
+        dietary_needs TEXT,
+        table_number INTEGER,
+        is_primary BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `;
 
@@ -102,6 +116,14 @@ exports.handler = async (event, context) => {
         WHERE email = ${email}
         RETURNING id, name, email, attendance
       `;
+
+      const rsvpId = result[0].id;
+
+      // Delete existing individual guest records
+      await sql`DELETE FROM individual_guests WHERE rsvp_id = ${rsvpId}`;
+
+      // Create individual guest records
+      await createIndividualGuests(sql, rsvpId, name, data.guest_names, data.dietary);
 
       return {
         statusCode: 200,
@@ -137,6 +159,11 @@ exports.handler = async (event, context) => {
         )
         RETURNING id, name, email, attendance
       `;
+
+      const rsvpId = result[0].id;
+
+      // Create individual guest records
+      await createIndividualGuests(sql, rsvpId, name, data.guest_names, data.dietary);
 
       return {
         statusCode: 201,
@@ -174,3 +201,24 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+// Helper function to create individual guest records
+async function createIndividualGuests(sql, rsvpId, primaryName, guestNames, dietary) {
+  // Add primary guest
+  await sql`
+    INSERT INTO individual_guests (rsvp_id, guest_name, dietary_needs, is_primary)
+    VALUES (${rsvpId}, ${primaryName}, ${dietary || ''}, true)
+  `;
+
+  // Add additional guests if any
+  if (guestNames && guestNames.trim()) {
+    const guests = guestNames.split(',').map(name => name.trim()).filter(name => name);
+    
+    for (const guestName of guests) {
+      await sql`
+        INSERT INTO individual_guests (rsvp_id, guest_name, dietary_needs, is_primary)
+        VALUES (${rsvpId}, ${guestName}, '', false)
+      `;
+    }
+  }
+}
