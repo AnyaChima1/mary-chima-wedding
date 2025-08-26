@@ -172,9 +172,24 @@
     .draggable {
       cursor: move;
       transition: transform 0.2s;
+      user-select: none;
     }
     .draggable:hover {
       transform: scale(1.02);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .dragging {
+      opacity: 0.5;
+      transform: rotate(5deg);
+    }
+    .drop-zone {
+      min-height: 40px;
+      border: 2px dashed transparent;
+      transition: all 0.3s ease;
+    }
+    .drop-zone.drag-over {
+      border-color: #c8a951;
+      background-color: #f9f7e8;
     }
     .notification-composer {
       background: white;
@@ -1319,42 +1334,109 @@
         const result = await response.json();
         
         if (result.success) {
-          // Update stats and display tables
-          document.getElementById('total-tables-count').textContent = result.statistics.total_tables;
-          document.getElementById('assigned-guests').textContent = result.statistics.assigned_guests;
-          document.getElementById('unassigned-guests').textContent = result.statistics.unassigned_guests;
-          document.getElementById('average-table-size').textContent = result.statistics.avg_table_size;
+          // Update stats with correct field names
+          const stats = result.data.statistics;
+          document.getElementById('total-tables-count').textContent = stats.total_tables || 0;
+          document.getElementById('assigned-guests').textContent = stats.total_assigned || 0;
+          document.getElementById('unassigned-guests').textContent = stats.total_unassigned || 0;
           
+          // Calculate average table size
+          const avgSize = stats.total_tables > 0 ? Math.round(stats.total_assigned / stats.total_tables) : 0;
+          document.getElementById('average-table-size').textContent = avgSize;
+          
+          // Display tables and unassigned guests
           displayTables(result.data);
+          displayUnassignedGuests(result.data.unassigned_guests || []);
         } else {
-          document.getElementById('table-grid').innerHTML = '<div class="error">Error loading table data</div>';
+          document.getElementById('table-grid').innerHTML = `
+            <div class="error">
+              <h4>❌ Error Loading Table Data</h4>
+              <p>${result.error || 'Unknown error occurred'}</p>
+              <button onclick="loadTableData()" class="btn btn-primary">🔄 Retry</button>
+            </div>
+          `;
         }
       } catch (error) {
         console.error('Error loading table data:', error);
-        document.getElementById('table-grid').innerHTML = '<div class="error">Error loading table data</div>';
+        document.getElementById('table-grid').innerHTML = `
+          <div class="error">
+            <h4>❌ Network Error</h4>
+            <p>Failed to load table data: ${error.message}</p>
+            <button onclick="loadTableData()" class="btn btn-primary">🔄 Retry</button>
+          </div>
+        `;
       }
     }
 
     function displayTables(tableData) {
       const container = document.getElementById('table-grid');
+      
       if (!tableData.tables || tableData.tables.length === 0) {
-        container.innerHTML = '<div class="loading">No tables assigned yet</div>';
+        container.innerHTML = '<div class="loading">No tables assigned yet. Use "Show Unassigned" to see guests needing table assignments.</div>';
         return;
       }
       
-      container.innerHTML = tableData.tables.map(table => `
-        <div class="table-card ${table.guest_count >= 8 ? 'full' : 'optimal'}">
-          <div class="table-header">
-            <span>Table ${table.table_number}</span>
-            <span>${table.guest_count}/8</span>
-          </div>
-          ${table.guests.map(guest => `
-            <div class="guest-item ${guest.is_primary ? 'guest-primary' : ''}">
-              <span>${guest.guest_name}</span>
+      container.innerHTML = tableData.tables.map(table => {
+        const guestCount = table.total_guests || table.guests.length;
+        const capacity = 8;
+        const isOverCapacity = guestCount > capacity;
+        const isOptimal = guestCount >= 6 && guestCount <= capacity;
+        
+        return `
+          <div class="table-card drop-zone ${isOverCapacity ? 'full' : isOptimal ? 'optimal' : ''}">
+            <div class="table-header">
+              <span>Table ${table.table_number}</span>
+              <span>${guestCount}/${capacity} guests</span>
             </div>
-          `).join('')}
+            <div class="table-guests">
+              ${table.guests.map(guest => `
+                <div class="guest-item draggable ${guest.is_primary ? 'guest-primary' : ''}" 
+                     data-guest-id="${guest.guest_id}" 
+                     draggable="true"
+                     title="Drag to move to different table">
+                  <span>${guest.name}</span>
+                  ${guest.dietary_needs ? '<small style="color: #666;">🥗 Special diet</small>' : ''}
+                </div>
+              `).join('')}
+              ${guestCount < capacity ? `<div class="drop-hint" style="padding: 8px; text-align: center; color: #999; font-size: 12px; border: 1px dashed #ddd; margin: 4px 0; border-radius: 4px;">Drop guests here (${capacity - guestCount} spaces left)</div>` : ''}
+            </div>
+            ${table.dietary_requirements && table.dietary_requirements.length > 0 ? `
+              <div class="table-dietary" style="margin-top: 8px; padding: 4px; background: #fff3e0; border-radius: 4px; font-size: 12px;">
+                <strong>Dietary:</strong> ${[...new Set(table.dietary_requirements)].join(', ')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+      
+      // Re-initialize drag and drop for new elements
+      setTimeout(initializeDragAndDrop, 100);
+    }
+    
+    function displayUnassignedGuests(unassignedGuests) {
+      const unassignedList = document.getElementById('unassigned-list');
+      
+      if (!unassignedGuests || unassignedGuests.length === 0) {
+        unassignedList.innerHTML = '<div class="loading">✅ All guests are assigned to tables!</div>';
+        return;
+      }
+      
+      unassignedList.innerHTML = unassignedGuests.map(guest => `
+        <div class="guest-item draggable" 
+             data-guest-id="${guest.guest_id}" 
+             data-rsvp-id="${guest.rsvp_id}"
+             draggable="true"
+             title="Drag to assign to a table">
+          <div>
+            <strong>${guest.name}</strong> ${guest.is_primary ? '(Primary)' : '(Additional)'}
+            ${guest.email ? `<br><small>${guest.email}</small>` : ''}
+            ${guest.dietary_needs ? `<br><small style="color: #666;">🥗 ${guest.dietary_needs}</small>` : ''}
+          </div>
         </div>
       `).join('');
+      
+      // Re-initialize drag and drop for new elements
+      setTimeout(initializeDragAndDrop, 100);
     }
 
     async function loadSongs() {
@@ -1697,24 +1779,29 @@
     function showUnassigned() {
       if (!requireAuth()) return;
       
-      fetch('/.netlify/functions/get-individual-guests', {
+      // Highlight the unassigned section
+      const unassignedSection = document.getElementById('unassigned-section');
+      unassignedSection.style.border = '2px solid #ff9800';
+      unassignedSection.style.backgroundColor = '#fff8e1';
+      
+      // Load fresh table data to get unassigned guests
+      fetch('/.netlify/functions/get-table-data', {
         headers: { 'Authorization': `Bearer ${adminPassword}` }
       })
       .then(response => response.json())
       .then(result => {
         if (result.success) {
-          const unassignedGuests = result.data.filter(guest => !guest.table_number);
-          const unassignedList = document.getElementById('unassigned-list');
+          const unassignedGuests = result.data.unassigned_guests || [];
+          displayUnassignedGuests(unassignedGuests);
           
-          if (unassignedGuests.length === 0) {
-            unassignedList.innerHTML = '<div class="loading">All guests are assigned to tables!</div>';
-          } else {
-            unassignedList.innerHTML = unassignedGuests.map(guest => `
-              <div class="guest-item draggable" data-guest-id="${guest.id}">
-                <span>${guest.guest_name}${guest.is_primary ? ' (Primary)' : ''}</span>
-              </div>
-            `).join('');
-          }
+          // Scroll to unassigned section
+          unassignedSection.scrollIntoView({ behavior: 'smooth' });
+          
+          // Reset highlight after 3 seconds
+          setTimeout(() => {
+            unassignedSection.style.border = '';
+            unassignedSection.style.backgroundColor = '';
+          }, 3000);
         } else {
           document.getElementById('unassigned-list').innerHTML = '<div class="error">Error loading unassigned guests</div>';
         }
@@ -1726,68 +1813,231 @@
     }
     
     // Auto-assign tables function
-    function autoAssignTables() {
+    async function autoAssignTables() {
       if (!requireAuth()) return;
       
       if (!confirm('This will automatically assign unassigned guests to tables with available space. Continue?')) {
         return;
       }
       
-      fetch('/.netlify/functions/get-individual-guests', {
-        headers: { 'Authorization': `Bearer ${adminPassword}` }
-      })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          const unassignedGuests = result.data.filter(guest => !guest.table_number);
-          
-          if (unassignedGuests.length === 0) {
-            alert('All guests are already assigned to tables!');
-            return;
-          }
-          
-          // Simple auto-assignment logic: assign to tables 1-10 with max 8 guests each
-          let currentTable = 1;
-          let guestsPerTable = {};
-          
-          // Count existing assignments
-          result.data.forEach(guest => {
-            if (guest.table_number) {
-              guestsPerTable[guest.table_number] = (guestsPerTable[guest.table_number] || 0) + 1;
-            }
-          });
-          
-          // Assign unassigned guests
-          const assignments = [];
-          unassignedGuests.forEach(guest => {
-            // Find a table with space
-            while (currentTable <= 10 && (guestsPerTable[currentTable] || 0) >= 8) {
-              currentTable++;
-            }
+      try {
+        // Load current table data
+        const response = await fetch('/.netlify/functions/get-table-data', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          alert('Error loading table data for auto-assignment.');
+          return;
+        }
+        
+        const unassignedGuests = result.data.unassigned_guests || [];
+        
+        if (unassignedGuests.length === 0) {
+          alert('All guests are already assigned to tables!');
+          return;
+        }
+        
+        // Count current assignments per table
+        const tableCapacity = {};
+        const maxGuestsPerTable = 8;
+        
+        // Initialize table capacity tracking
+        result.data.tables.forEach(table => {
+          tableCapacity[table.table_number] = table.total_guests || table.guests.length;
+        });
+        
+        // Generate assignments
+        const assignments = [];
+        let currentTable = 1;
+        
+        for (const guest of unassignedGuests) {
+          // Find a table with available space
+          while (currentTable <= 20) { // Support up to 20 tables
+            const currentCount = tableCapacity[currentTable] || 0;
             
-            if (currentTable <= 10) {
+            if (currentCount < maxGuestsPerTable) {
               assignments.push({
-                guest_id: guest.id,
+                guest_id: guest.guest_id,
                 table_number: currentTable
               });
-              guestsPerTable[currentTable] = (guestsPerTable[currentTable] || 0) + 1;
+              
+              tableCapacity[currentTable] = currentCount + 1;
+              break;
             }
-          });
+            currentTable++;
+          }
           
-          if (assignments.length > 0) {
-            // Update table assignments (this would need a backend function)
-            alert(`Would assign ${assignments.length} guests to tables. Implementation pending.`);
-            // TODO: Implement actual table assignment update
-          } else {
-            alert('No available table space for auto-assignment.');
+          // If we've run out of tables, create a new one
+          if (currentTable > 20) {
+            alert('Warning: More than 20 tables would be needed. Please review assignments manually.');
+            break;
           }
         }
-      })
-      .catch(error => {
+        
+        if (assignments.length === 0) {
+          alert('No guests could be auto-assigned. All tables may be full.');
+          return;
+        }
+        
+        // Show assignment preview
+        const preview = assignments.map(a => {
+          const guest = unassignedGuests.find(g => g.guest_id === a.guest_id);
+          return `${guest.name} → Table ${a.table_number}`;
+        }).join('\n');
+        
+        if (!confirm(`Auto-assign ${assignments.length} guests?\n\n${preview}\n\nContinue?`)) {
+          return;
+        }
+        
+        // Submit assignments
+        const updateResponse = await fetch('/.netlify/functions/update-table-assignments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminPassword}`
+          },
+          body: JSON.stringify({ assignments })
+        });
+        
+        const updateResult = await updateResponse.json();
+        
+        if (updateResult.success) {
+          alert(`✅ Successfully auto-assigned ${updateResult.updated_count} guests!\n\nRefreshing table view...`);
+          loadTableData(); // Refresh the table display
+        } else {
+          alert(`❌ Auto-assignment failed: ${updateResult.error}`);
+        }
+        
+      } catch (error) {
         console.error('Error auto-assigning tables:', error);
         alert('Error auto-assigning tables. Please try again.');
+      }
+    }
+    
+    // Drag and Drop Functionality
+    function initializeDragAndDrop() {
+      // Add drag and drop event listeners to the table grid
+      const tableGrid = document.getElementById('table-grid');
+      const unassignedList = document.getElementById('unassigned-list');
+      
+      if (tableGrid) {
+        tableGrid.addEventListener('dragover', handleDragOver);
+        tableGrid.addEventListener('drop', handleDrop);
+      }
+      
+      if (unassignedList) {
+        unassignedList.addEventListener('dragover', handleDragOver);
+        unassignedList.addEventListener('drop', handleDropToUnassigned);
+      }
+      
+      // Make guest items draggable
+      document.addEventListener('click', function(e) {
+        if (e.target.closest('.guest-item.draggable')) {
+          const guestItem = e.target.closest('.guest-item.draggable');
+          guestItem.draggable = true;
+          guestItem.addEventListener('dragstart', handleDragStart);
+          guestItem.addEventListener('dragend', handleDragEnd);
+        }
       });
     }
+    
+    function handleDragStart(e) {
+      e.dataTransfer.setData('text/plain', e.target.dataset.guestId);
+      e.target.classList.add('dragging');
+    }
+    
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.classList.remove('drag-over');
+      });
+    }
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+      const dropZone = e.target.closest('.table-card, .unassigned-section');
+      if (dropZone) {
+        dropZone.classList.add('drag-over');
+      }
+    }
+    
+    function handleDrop(e) {
+      e.preventDefault();
+      const guestId = e.dataTransfer.getData('text/plain');
+      const tableCard = e.target.closest('.table-card');
+      
+      if (tableCard && guestId) {
+        const tableNumber = parseInt(tableCard.querySelector('.table-header span').textContent.replace('Table ', ''));
+        assignGuestToTable(parseInt(guestId), tableNumber);
+      }
+      
+      // Clean up drag styling
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    }
+    
+    function handleDropToUnassigned(e) {
+      e.preventDefault();
+      const guestId = e.dataTransfer.getData('text/plain');
+      
+      if (guestId) {
+        assignGuestToTable(parseInt(guestId), null); // null = unassigned
+      }
+      
+      // Clean up drag styling
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    }
+    
+    async function assignGuestToTable(guestId, tableNumber) {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/update-table-assignments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminPassword}`
+          },
+          body: JSON.stringify({
+            assignments: [{ guest_id: guestId, table_number: tableNumber }]
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Show success feedback
+          const message = tableNumber ? `Guest assigned to Table ${tableNumber}` : 'Guest moved to unassigned';
+          
+          // Create temporary success message
+          const successDiv = document.createElement('div');
+          successDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 10px 20px; border-radius: 6px; z-index: 10001; font-weight: bold;';
+          successDiv.textContent = '✅ ' + message;
+          document.body.appendChild(successDiv);
+          
+          setTimeout(() => {
+            if (successDiv.parentNode) {
+              successDiv.parentNode.removeChild(successDiv);
+            }
+          }, 3000);
+          
+          // Refresh table data
+          loadTableData();
+        } else {
+          alert('Failed to update table assignment: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error assigning guest to table:', error);
+        alert('Error updating table assignment. Please try again.');
+      }
+    }
+    
+    // Initialize drag and drop when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // ... existing DOMContentLoaded code ...
+      initializeDragAndDrop();
+    });
   </script>
 </body>
 </html>
