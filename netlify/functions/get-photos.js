@@ -27,11 +27,16 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Basic authentication check
+    // Check if this is an admin request (with auth) or public gallery request
     const authHeader = event.headers.authorization;
     const expectedAuth = process.env.ADMIN_PASSWORD || 'Mary&Chima0003';
+    const isAdminRequest = authHeader && authHeader === `Bearer ${expectedAuth}`;
     
-    if (expectedAuth && (!authHeader || authHeader !== `Bearer ${expectedAuth}`)) {
+    // For public gallery access, allow without authentication
+    // For admin features, require authentication
+    const { admin_only } = event.queryStringParameters || {};
+    
+    if (admin_only === 'true' && !isAdminRequest) {
       return {
         statusCode: 401,
         headers,

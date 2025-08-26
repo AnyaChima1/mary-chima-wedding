@@ -699,23 +699,154 @@ songForm?.addEventListener('submit', async (e) => {
 });
 
 // ========================================
-// PHOTO SHARING MODAL FUNCTIONALITY
+// ENHANCED PHOTO SHARING & GALLERY FUNCTIONALITY
 // ========================================
 const photoModal = document.getElementById('photo-modal');
 const photoForm = document.getElementById('photo-form');
 const photoSuccess = document.getElementById('photo-success');
+let galleryPhotos = [];
+let currentLightboxIndex = 0;
+let currentUploadMethod = 'url';
+let selectedFiles = [];
 
-// Open photo modal
-function openPhotoModal() {
+// Open photo modal with specific tab
+function openPhotoModal(tab = 'share') {
   photoModal.classList.add('is-open');
   photoModal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   
-  setTimeout(() => {
-    document.getElementById('photo-sharer-name').focus();
-  }, 300);
+  // Switch to specified tab
+  switchPhotoTab(tab);
+  
+  if (tab === 'share') {
+    setTimeout(() => {
+      document.getElementById('photo-sharer-name').focus();
+    }, 300);
+  } else if (tab === 'gallery') {
+    loadGallery();
+  }
   
   createCelebration(document.querySelector('.card--photos'));
+}
+
+// Switch between photo modal tabs
+function switchPhotoTab(tab) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event?.target?.classList.add('active') || document.querySelector(`.tab-btn:${tab === 'share' ? 'first' : 'last'}-child`).classList.add('active');
+  
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  document.getElementById(tab === 'share' ? 'share-tab' : 'gallery-tab').classList.add('active');
+  
+  // Load gallery if switching to gallery tab
+  if (tab === 'gallery') {
+    loadGallery();
+  }
+}
+
+// Upload method selection
+function selectUploadMethod(method) {
+  currentUploadMethod = method;
+  
+  // Update method option styling
+  document.querySelectorAll('.method-option').forEach(option => option.classList.remove('active'));
+  event.target.closest('.method-option').classList.add('active');
+  
+  // Show/hide upload sections
+  document.querySelectorAll('.upload-section').forEach(section => section.classList.remove('active'));
+  document.getElementById(method + '-upload').classList.add('active');
+  
+  // Update form validation
+  const urlInput = document.getElementById('photo-url');
+  const fileInput = document.getElementById('photo-files');
+  
+  if (method === 'url') {
+    urlInput.required = true;
+    fileInput.required = false;
+    selectedFiles = [];
+    updateFilePreview();
+  } else {
+    urlInput.required = false;
+    fileInput.required = true;
+  }
+}
+
+// File upload handling
+function setupFileUpload() {
+  const fileInput = document.getElementById('photo-files');
+  const uploadArea = document.querySelector('.file-upload-area');
+  
+  // File input change
+  fileInput.addEventListener('change', handleFileSelect);
+  
+  // Drag and drop
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+  
+  uploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+  });
+  
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+  });
+}
+
+function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  handleFiles(files);
+}
+
+function handleFiles(files) {
+  const validFiles = files.filter(file => {
+    const isValid = file.type.startsWith('image/') || file.type.startsWith('video/');
+    const isSmallEnough = file.size <= 10 * 1024 * 1024; // 10MB
+    return isValid && isSmallEnough;
+  });
+  
+  selectedFiles = [...selectedFiles, ...validFiles];
+  updateFilePreview();
+}
+
+function updateFilePreview() {
+  const preview = document.getElementById('file-preview');
+  preview.innerHTML = '';
+  
+  selectedFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      item.appendChild(img);
+    } else {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.muted = true;
+      item.appendChild(video);
+    }
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'file-item-remove';
+    removeBtn.innerHTML = '×';
+    removeBtn.onclick = () => removeFile(index);
+    item.appendChild(removeBtn);
+    
+    preview.appendChild(item);
+  });
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  updateFilePreview();
 }
 
 // Close photo modal
@@ -728,52 +859,289 @@ function closePhotoModal() {
     photoForm.reset();
     photoForm.style.display = 'flex';
     photoSuccess.style.display = 'none';
+    selectedFiles = [];
+    updateFilePreview();
   }, 300);
 }
 
-// Photo form submission
+// Load gallery photos
+async function loadGallery() {
+  const galleryGrid = document.getElementById('gallery-grid');
+  galleryGrid.innerHTML = '<div class="gallery-loading">Loading photos...</div>';
+  
+  try {
+    const response = await fetch('/.netlify/functions/get-photos');
+    const result = await response.json();
+    
+    if (result.success && result.data.length > 0) {
+      galleryPhotos = result.data;
+      displayGallery(galleryPhotos);
+      updateGalleryStats(result.statistics);
+    } else {
+      galleryGrid.innerHTML = `
+        <div class="gallery-empty">
+          <div class="gallery-empty-icon">📷</div>
+          <h3>No photos yet</h3>
+          <p>Be the first to share a memory!</p>
+          <button class="btn btn--primary" onclick="switchPhotoTab('share')">Share Photo</button>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading gallery:', error);
+    galleryGrid.innerHTML = '<div class="gallery-loading">Error loading photos. Please try again.</div>';
+  }
+}
+
+// Display gallery photos
+function displayGallery(photos) {
+  const galleryGrid = document.getElementById('gallery-grid');
+  
+  if (photos.length === 0) {
+    galleryGrid.innerHTML = `
+      <div class="gallery-empty">
+        <div class="gallery-empty-icon">📷</div>
+        <h3>No photos in this category</h3>
+        <p>Try a different filter or be the first to share!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  galleryGrid.innerHTML = photos.map((photo, index) => {
+    const isVideo = photo.photo_url.includes('.mp4') || photo.photo_url.includes('.mov') || photo.photo_url.includes('video');
+    return `
+      <div class="gallery-item ${isVideo ? 'is-video' : ''}" onclick="openLightbox(${index})">
+        ${isVideo ? 
+          `<video src="${photo.photo_url}" muted></video>` : 
+          `<img src="${photo.photo_url}" alt="${photo.description || 'Wedding photo'}" loading="lazy">`
+        }
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-title">${photo.name}</div>
+          <div class="gallery-item-meta">${photo.category} • ${new Date(photo.created_at).toLocaleDateString()}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Filter gallery
+function filterGallery(category) {
+  // Update filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Filter photos
+  const filteredPhotos = category === 'all' ? 
+    galleryPhotos : 
+    galleryPhotos.filter(photo => photo.category === category);
+  
+  displayGallery(filteredPhotos);
+}
+
+// Update gallery stats
+function updateGalleryStats(statistics) {
+  const photoCount = document.getElementById('photo-count');
+  const contributorCount = document.getElementById('contributor-count');
+  
+  if (photoCount && contributorCount) {
+    photoCount.textContent = `${statistics.total_photos} photos`;
+    contributorCount.textContent = `${statistics.category_breakdown?.length || 0} contributors`;
+  }
+}
+
+// Lightbox functionality
+function openLightbox(index) {
+  currentLightboxIndex = index;
+  const lightbox = document.getElementById('photo-lightbox');
+  const photo = galleryPhotos[index];
+  
+  // Set media
+  const image = document.getElementById('lightbox-image');
+  const video = document.getElementById('lightbox-video');
+  const isVideo = photo.photo_url.includes('.mp4') || photo.photo_url.includes('.mov') || photo.photo_url.includes('video');
+  
+  if (isVideo) {
+    video.src = photo.photo_url;
+    video.style.display = 'block';
+    image.style.display = 'none';
+  } else {
+    image.src = photo.photo_url;
+    image.style.display = 'block';
+    video.style.display = 'none';
+  }
+  
+  // Set info
+  document.getElementById('lightbox-description').textContent = photo.description || 'No description';
+  document.getElementById('lightbox-contributor').textContent = photo.name;
+  document.getElementById('lightbox-category').textContent = photo.category;
+  document.getElementById('lightbox-date').textContent = new Date(photo.created_at).toLocaleDateString();
+  
+  lightbox.style.display = 'flex';
+  setTimeout(() => lightbox.classList.add('active'), 10);
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('photo-lightbox');
+  lightbox.classList.remove('active');
+  setTimeout(() => lightbox.style.display = 'none', 300);
+}
+
+function navigateLightbox(direction) {
+  currentLightboxIndex += direction;
+  
+  if (currentLightboxIndex < 0) {
+    currentLightboxIndex = galleryPhotos.length - 1;
+  } else if (currentLightboxIndex >= galleryPhotos.length) {
+    currentLightboxIndex = 0;
+  }
+  
+  openLightbox(currentLightboxIndex);
+}
+
+// Keyboard navigation for lightbox
+document.addEventListener('keydown', (e) => {
+  const lightbox = document.getElementById('photo-lightbox');
+  if (lightbox && lightbox.style.display === 'flex') {
+    switch(e.key) {
+      case 'Escape':
+        closeLightbox();
+        break;
+      case 'ArrowLeft':
+        navigateLightbox(-1);
+        break;
+      case 'ArrowRight':
+        navigateLightbox(1);
+        break;
+    }
+  }
+});
+
+// Enhanced photo form submission with file upload support
 photoForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const submitBtn = photoForm.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Submitting... ⏳';
+  submitBtn.textContent = 'Uploading... ⏳';
   submitBtn.disabled = true;
   
   try {
     const formData = new FormData(photoForm);
-    const photoData = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      photo_url: formData.get('photo_url'),
-      description: formData.get('description'),
-      category: formData.get('category')
-    };
     
-    const response = await fetch('/.netlify/functions/submit-photo', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(photoData)
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Failed to submit photo');
+    if (currentUploadMethod === 'url') {
+      // Handle URL submission
+      const photoData = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        photo_url: formData.get('photo_url'),
+        description: formData.get('description'),
+        category: formData.get('category')
+      };
+      
+      const response = await fetch('/.netlify/functions/submit-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(photoData)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit photo');
+      }
+      
+      showPhotoSuccess();
+      
+    } else {
+      // Handle file upload
+      if (selectedFiles.length === 0) {
+        throw new Error('Please select at least one file to upload');
+      }
+      
+      // Upload files one by one
+      let successCount = 0;
+      const totalFiles = selectedFiles.length;
+      
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        submitBtn.textContent = `Uploading ${i + 1}/${totalFiles}... ⏳`;
+        
+        // Create a unique filename
+        const timestamp = Date.now();
+        const filename = `wedding_${timestamp}_${i + 1}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        
+        // Convert file to base64 for upload
+        const base64 = await fileToBase64(file);
+        
+        const uploadData = {
+          name: formData.get('name'),
+          email: formData.get('email'),
+          description: formData.get('description'),
+          category: formData.get('category'),
+          file_data: base64,
+          filename: filename,
+          file_type: file.type
+        };
+        
+        const response = await fetch('/.netlify/functions/upload-photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(uploadData)
+        });
+        
+        if (response.ok) {
+          successCount++;
+        } else {
+          console.error(`Failed to upload file ${i + 1}:`, await response.text());
+        }
+      }
+      
+      if (successCount === totalFiles) {
+        showPhotoSuccess(`Successfully uploaded ${successCount} photo${successCount > 1 ? 's' : ''}!`);
+      } else if (successCount > 0) {
+        showPhotoSuccess(`Uploaded ${successCount} of ${totalFiles} photos. Some uploads may have failed.`);
+      } else {
+        throw new Error('Failed to upload any photos. Please try again.');
+      }
     }
-    
-    photoForm.style.display = 'none';
-    photoSuccess.style.display = 'flex';
-    createCelebration(photoSuccess);
     
   } catch (error) {
     console.error('Photo submission error:', error);
-    alert('Sorry, there was an error submitting your photo. Please try again.');
+    alert(`Sorry, there was an error: ${error.message}. Please try again.`);
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
   }
 });
+
+// Helper function to convert file to base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
+// Show photo success with custom message
+function showPhotoSuccess(message = 'Thank you for sharing your memories with us!') {
+  photoForm.style.display = 'none';
+  photoSuccess.style.display = 'flex';
+  
+  // Update success message if provided
+  const successText = photoSuccess.querySelector('p');
+  if (successText && message) {
+    successText.textContent = message;
+  }
+  
+  createCelebration(photoSuccess);
+  
+  // Reset form and files
+  selectedFiles = [];
+  updateFilePreview();
+}
 
 // ========================================
 // WISHES MODAL FUNCTIONALITY
@@ -907,6 +1275,9 @@ window.addEventListener('load', () => {
   document.body.style.opacity = '0';
   document.body.style.transition = 'opacity 0.8s ease';
   
+  // Initialize file upload functionality
+  setupFileUpload();
+  
   // Create loading overlay
   const loadingOverlay = document.createElement('div');
   loadingOverlay.style.cssText = `
@@ -1024,6 +1395,11 @@ heartsStyle.textContent = `
   @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 0.7; }
     50% { transform: scale(1.2); opacity: 1; }
+  }
+  
+  @keyframes fadeDot {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(0); opacity: 0; }
   }
 `;
 document.head.appendChild(heartsStyle);
