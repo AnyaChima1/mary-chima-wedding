@@ -39,6 +39,19 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Check if SendGrid API key is available
+    const sendGridApiKey = process.env.SENDGRID_API_KEY;
+    if (!sendGridApiKey) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'SendGrid API key not configured. Please set SENDGRID_API_KEY environment variable.',
+          setup_instructions: 'Visit https://app.sendgrid.com/settings/api_keys to create an API key'
+        }),
+      };
+    }
+
     // Parse request body
     let data;
     try {
@@ -94,7 +107,17 @@ exports.handler = async (event, context) => {
       WHERE id = ANY(${recipient_ids}) AND attendance = 'yes'
     `;
 
-    // Store notification records and send actual emails
+    if (recipients.length === 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'No valid attending recipients found for the provided IDs' 
+        }),
+      };
+    }
+
+    // Send emails using SendGrid API
     let sentCount = 0;
     let emailErrors = [];
     
@@ -106,27 +129,69 @@ exports.handler = async (event, context) => {
           VALUES (${recipient.id}, ${recipient.email}, ${subject}, ${message}, ${notification_type || 'general'}, 'sending')
         `;
         
-        // Send actual email using Netlify Email Integration
-        const emailResponse = await fetch(`${process.env.URL}/.netlify/functions/emails/notification`, {
+        // Prepare email content
+        const fromEmail = process.env.WEDDING_EMAIL_FROM || 'info@maryandchima.love';
+        const fromName = process.env.WEDDING_EMAIL_FROM_NAME || 'Mary & Chima Wedding';
+        const websiteUrl = process.env.URL || 'https://maryandchima.love';
+        
+        // Create HTML email content
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+</head>
+<body style="font-family: Georgia, serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #c8a951, #b8954a); color: white; text-align: center; padding: 30px 20px;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: normal; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Mary & Chima's Wedding</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">An Important Update</p>
+        </div>
+        <div style="padding: 30px 20px;">
+            <h2 style="color: #c8a951; font-size: 22px; margin: 0 0 20px 0; font-weight: normal;">${subject}</h2>
+            <div style="font-size: 16px; line-height: 1.7; color: #555; margin-bottom: 25px;">
+                ${message.replace(/\n/g, '<br>')}
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${websiteUrl}" style="display: inline-block; background: #c8a951; color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: bold;">Visit Wedding Website</a>
+            </div>
+        </div>
+        <div style="background: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+            <p style="margin: 0; font-size: 14px; color: #666;">
+                This message was sent from Mary & Chima's Wedding Website.<br>
+                If you have any questions, please reply to this email.
+            </p>
+            <div style="margin-top: 15px; font-size: 12px; color: #999;">
+                <p style="margin: 5px 0;">💕 With love, Mary & Chima</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+
+        // Send email via SendGrid API
+        const sendGridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
           method: 'POST',
           headers: {
+            'Authorization': `Bearer ${sendGridApiKey}`,
             'Content-Type': 'application/json',
-            'netlify-emails-secret': process.env.NETLIFY_EMAILS_SECRET || ''
           },
           body: JSON.stringify({
-            from: process.env.WEDDING_EMAIL_FROM || 'info@maryandchima.love',
-            to: recipient.email,
-            subject: subject,
-            parameters: {
-              subject: subject,
-              message: message.replace(/\n/g, '<br>'), // Convert line breaks to HTML
-              website_url: process.env.URL || 'https://maryandchima.love',
-              recipient_name: recipient.name
-            }
+            personalizations: [{
+              to: [{ email: recipient.email, name: recipient.name }],
+              subject: subject
+            }],
+            from: { email: fromEmail, name: fromName },
+            content: [
+              { type: 'text/plain', value: message },
+              { type: 'text/html', value: htmlContent }
+            ]
           })
         });
-        
-        if (emailResponse.ok) {
+
+        if (sendGridResponse.ok || sendGridResponse.status === 202) {
           // Update notification status to sent
           await sql`
             UPDATE notifications 
@@ -143,8 +208,8 @@ exports.handler = async (event, context) => {
           
           sentCount++;
         } else {
-          const emailError = await emailResponse.text();
-          emailErrors.push(`${recipient.name} (${recipient.email}): ${emailError}`);
+          const errorText = await sendGridResponse.text();
+          emailErrors.push(`${recipient.name} (${recipient.email}): ${errorText}`);
           
           // Update notification status to failed
           await sql`
@@ -170,13 +235,14 @@ exports.handler = async (event, context) => {
         }
       }
     }
-    
+
     // Prepare response
     const response = {
       success: sentCount > 0,
+      method: 'SendGrid Direct API',
       message: sentCount === recipients.length 
-        ? `All ${sentCount} notifications sent successfully!`
-        : `${sentCount} of ${recipients.length} notifications sent successfully`,
+        ? `All ${sentCount} emails sent successfully via SendGrid!`
+        : `${sentCount} of ${recipients.length} emails sent successfully via SendGrid`,
       sentCount,
       totalRecipients: recipients.length,
       recipients: recipients.map(r => ({ id: r.id, name: r.name, email: r.email })),
@@ -190,7 +256,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Notification error:', error);
+    console.error('SendGrid notification error:', error);
     
     return {
       statusCode: 500,

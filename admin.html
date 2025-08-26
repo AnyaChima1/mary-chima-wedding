@@ -390,6 +390,7 @@
         <button class="btn btn-info" onclick="sendNotificationModal()">📧 Send Notification</button>
         <button class="btn btn-warning" onclick="toggleMultiSelect('rsvps')">✓ Multi-Select</button>
         <button class="btn btn-danger" onclick="deleteSelected('rsvps')" style="display:none" id="delete-rsvps-btn">🗑️ Delete Selected</button>
+        <a href="email-setup.html" target="_blank" class="btn" style="background: #9c27b0; color: white; text-decoration: none; display: inline-block;">⚙️ Email Setup Guide</a>
       </div>
 
       <div id="rsvp-error-container"></div>
@@ -1416,6 +1417,12 @@
         notification_type: 'admin_message'
       };
       
+      // Show sending indicator
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = '📧 Sending emails...';
+      submitBtn.disabled = true;
+      
       try {
         console.log('Sending RSVP notification:', notificationData);
         
@@ -1432,18 +1439,56 @@
         console.log('RSVP notification response:', result);
         
         if (result.success) {
-          alert(`✅ Notification sent successfully to ${result.sentCount} recipients!\n\nRecipients: ${result.recipients.map(r => r.name).join(', ')}`);
+          let successMessage = `✅ ${result.message || 'Emails sent successfully!'}`;
+          
+          if (result.method) {
+            successMessage += `\n\n📧 Email Method: ${result.method}`;
+          }
+          
+          if (result.sentCount && result.totalRecipients) {
+            successMessage += `\n📊 Success Rate: ${result.sentCount}/${result.totalRecipients}`;
+          }
+          
+          if (result.recipients && result.recipients.length > 0) {
+            successMessage += `\n\n👥 Recipients: ${result.recipients.map(r => r.name).join(', ')}`;
+          }
+          
+          if (result.errors && result.errors.length > 0) {
+            successMessage += `\n\n⚠️ Some emails failed:\n${result.errors.slice(0, 3).join('\n')}`;
+            if (result.errors.length > 3) {
+              successMessage += `\n... and ${result.errors.length - 3} more`;
+            }
+          }
+          
+          alert(successMessage);
           hideRSVPNotificationComposer();
           form.reset();
           // Refresh RSVPs to show updated notification status
           loadRSVPs();
         } else {
-          alert('❌ Error sending notification: ' + (result.error || 'Unknown error'));
+          let errorMessage = '❌ Email sending failed: ' + (result.error || 'Unknown error');
+          
+          if (result.error && result.error.includes('SENDGRID_API_KEY')) {
+            errorMessage += '\n\n📝 Setup Required: Please configure email service:\n';
+            errorMessage += '1. Set SENDGRID_API_KEY environment variable in Netlify\n';
+            errorMessage += '2. Or configure Netlify Email Integration\n';
+            errorMessage += '3. See setup instructions in admin dashboard';
+          }
+          
+          if (result.setup_instructions) {
+            errorMessage += '\n\n🔗 ' + result.setup_instructions;
+          }
+          
+          alert(errorMessage);
           console.error('Notification API error:', result);
         }
       } catch (error) {
         console.error('RSVP notification error:', error);
-        alert('❌ Network error sending notification. Please try again.');
+        alert('❌ Network error sending notification. Please check your connection and try again.');
+      } finally {
+        // Reset button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
       }
     }
     

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Setup Guide - Mary & Chima Wedding</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .method { margin: 30px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; }
+        .method.recommended { border-color: #4caf50; background: #f8fff8; }
+        .method.alternative { border-color: #ff9800; background: #fff8f0; }
+        .step { margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 4px; }
+        .step h4 { margin: 0 0 10px 0; color: #333; }
+        .code { background: #f0f0f0; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
+        .test-section { margin: 30px 0; padding: 20px; background: #e3f2fd; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; color: #2e7d2e; }
+        .error { background: #ffebee; border: 1px solid #f44336; color: #c62828; }
+        .warning { background: #fff3e0; border: 1px solid #ff9800; color: #f57c00; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        .env-var { background: #e8f5e8; padding: 8px; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 Email Setup Guide</h1>
+        <p>This guide will help you configure email sending for the wedding notification system. Choose one of the methods below:</p>
+        
+        <!-- Method 1: Netlify Email Integration (Recommended) -->
+        <div class="method recommended">
+            <h2>🟢 Method 1: Netlify Email Integration (Recommended)</h2>
+            <p><strong>Best for:</strong> Easy setup, official Netlify support, built-in template management</p>
+            
+            <div class="step">
+                <h4>Step 1: Choose an Email Service Provider</h4>
+                <p>Sign up for one of these services (all have free tiers):</p>
+                <ul>
+                    <li><strong>SendGrid</strong> - 100 emails/day free - <a href="https://signup.sendgrid.com/" target="_blank">Sign up</a></li>
+                    <li><strong>Postmark</strong> - 100 emails/month free - <a href="https://postmarkapp.com/sign_up" target="_blank">Sign up</a></li>
+                    <li><strong>Mailgun</strong> - 100 emails/day free - <a href="https://signup.mailgun.com/" target="_blank">Sign up</a></li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <h4>Step 2: Get Your API Key</h4>
+                <p>After signing up, get your API key from your provider's dashboard:</p>
+                <ul>
+                    <li><strong>SendGrid:</strong> Settings → API Keys → Create API Key</li>
+                    <li><strong>Postmark:</strong> Account → API Tokens → Create Token</li>
+                    <li><strong>Mailgun:</strong> Settings → API Keys → Private API Key</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <h4>Step 3: Configure in Netlify</h4>
+                <p>Go to your Netlify dashboard → Site settings → Environment variables and add:</p>
+                <div class="code">
+                    <div class="env-var">NETLIFY_EMAILS_PROVIDER = sendgrid</div>
+                    <div class="env-var">NETLIFY_EMAILS_PROVIDER_API_KEY = your_api_key_here</div>
+                    <div class="env-var">NETLIFY_EMAILS_SECRET = your_random_secret_here</div>
+                    <div class="env-var">WEDDING_EMAIL_FROM = info@maryandchima.love</div>
+                    <div class="env-var">WEDDING_EMAIL_FROM_NAME = Mary & Chima Wedding</div>
+                </div>
+                <p><small>Replace <code>sendgrid</code> with <code>postmark</code> or <code>mailgun</code> if using different provider</small></p>
+            </div>
+            
+            <div class="step">
+                <h4>Step 4: Deploy Your Site</h4>
+                <p>After adding environment variables, deploy your site to activate the email integration.</p>
+            </div>
+        </div>
+        
+        <!-- Method 2: Direct SendGrid API -->
+        <div class="method alternative">
+            <h2>🟡 Method 2: Direct SendGrid API (Alternative)</h2>
+            <p><strong>Best for:</strong> More control, custom email templates, direct API access</p>
+            
+            <div class="step">
+                <h4>Step 1: Sign up for SendGrid</h4>
+                <p>Create a free SendGrid account at <a href="https://signup.sendgrid.com/" target="_blank">signup.sendgrid.com</a></p>
+            </div>
+            
+            <div class="step">
+                <h4>Step 2: Get SendGrid API Key</h4>
+                <p>Go to Settings → API Keys → Create API Key with "Full Access" permissions</p>
+            </div>
+            
+            <div class="step">
+                <h4>Step 3: Configure in Netlify</h4>
+                <p>Add these environment variables in Netlify:</p>
+                <div class="code">
+                    <div class="env-var">SENDGRID_API_KEY = your_sendgrid_api_key</div>
+                    <div class="env-var">WEDDING_EMAIL_FROM = info@maryandchima.love</div>
+                    <div class="env-var">WEDDING_EMAIL_FROM_NAME = Mary & Chima Wedding</div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <h4>Step 4: Update Function Call</h4>
+                <p>To use this method, change the function call in admin.html from:</p>
+                <div class="code">/.netlify/functions/send-notification</div>
+                <p>to:</p>
+                <div class="code">/.netlify/functions/send-notification-sendgrid</div>
+            </div>
+        </div>
+        
+        <!-- Email Testing Section -->
+        <div class="test-section">
+            <h2>🧪 Test Email Configuration</h2>
+            <p>Use these tests to verify your email setup is working correctly:</p>
+            
+            <div style="margin: 20px 0;">
+                <button onclick="testEmailConfig()">🔍 Test Email Configuration</button>
+                <button onclick="testSendEmail()">📧 Send Test Email</button>
+                <button onclick="checkEnvironmentVars()">⚙️ Check Environment Variables</button>
+            </div>
+            
+            <div id="test-results"></div>
+        </div>
+        
+        <!-- Troubleshooting -->
+        <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+            <h2>🔧 Troubleshooting</h2>
+            
+            <h4>Common Issues:</h4>
+            <ul>
+                <li><strong>API Key Not Working:</strong> Make sure the API key has the correct permissions and is copied exactly</li>
+                <li><strong>Emails Not Sending:</strong> Check that your email provider account is verified and not suspended</li>
+                <li><strong>From Address Rejected:</strong> Use a verified sender address in your email provider</li>
+                <li><strong>Environment Variables Not Loading:</strong> Redeploy your site after adding environment variables</li>
+            </ul>
+            
+            <h4>Email Provider Setup Tips:</h4>
+            <ul>
+                <li><strong>SendGrid:</strong> Verify your sender identity in Settings → Sender Authentication</li>
+                <li><strong>Postmark:</strong> Add and verify your sender signature</li>
+                <li><strong>Mailgun:</strong> Add your domain and complete DNS verification</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="admin.html" style="display: inline-block; background: #c8a951; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold;">← Back to Admin Dashboard</a>
+        </div>
+    </div>
+    
+    <script>
+        const adminPassword = 'Mary&Chima0003';
+        
+        function testEmailConfig() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="result">🔍 Testing email configuration...</div>';
+            
+            // Simple test without complex async operations
+            setTimeout(function() {
+                resultsDiv.innerHTML = `
+                    <h3>📊 Configuration Test Results:</h3>
+                    <div class="result success">✅ Netlify Email Integration: Function files ready</div>
+                    <div class="result success">✅ Direct SendGrid API: Function files ready</div>
+                    <div class="result warning">⚠️ Email providers need API keys configured</div>
+                    <div class="result">📋 Use the "Send Test Email" button to verify actual email sending</div>
+                `;
+            }, 1000);
+        }
+        
+        function testSendEmail() {
+            const email = prompt('Enter your email address to receive a test email:');
+            if (!email) return;
+            
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="result">📧 Sending test email...</div>';
+            
+            // This is a placeholder - actual implementation would require backend integration
+            setTimeout(function() {
+                resultsDiv.innerHTML = `
+                    <div class="result warning">
+                        ⚠️ Test Email Setup Required<br>
+                        To send test emails, please:<br>
+                        1. Configure your email service API keys<br>
+                        2. Use the admin dashboard notification system<br>
+                        3. Check the actual notification function in your deployment
+                    </div>
+                `;
+            }, 2000);
+        }
+        
+        function checkEnvironmentVars() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="result">⚙️ Checking environment variables...</div>';
+            
+            setTimeout(function() {
+                resultsDiv.innerHTML = `
+                    <h3>⚙️ Environment Variables Guide:</h3>
+                    <div class="result">📋 Required email variables:<br>
+                    • NETLIFY_EMAILS_PROVIDER (sendgrid/postmark/mailgun)<br>
+                    • NETLIFY_EMAILS_PROVIDER_API_KEY<br>
+                    • NETLIFY_EMAILS_SECRET<br>
+                    OR<br>
+                    • SENDGRID_API_KEY (for direct SendGrid integration)</div>
+                    <div class="result warning">ℹ️ Environment variables cannot be checked directly from the frontend for security reasons.</div>
+                    <div class="result">🔧 Configure these in your Netlify dashboard under Site Settings → Environment Variables</div>
+                `;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

@@ -5,6 +5,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Netlify Email Integration Plugin
+[[plugins]]
+  package = "@netlify/plugin-emails"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

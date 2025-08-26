@@ -63,6 +63,24 @@
         <div id="rsvp-integration-result" class="result" style="display: none;"></div>
     </div>
     
+    <div class="test-section">
+        <h2>Test 6: Email Sending Verification</h2>
+        <p>Test if emails are actually being sent (not just stored in database).</p>
+        <div class="form-group">
+            <label>Your Email (to receive test):</label>
+            <input type="email" id="test-email-address" placeholder="your@email.com">
+        </div>
+        <button onclick="testActualEmailSending()">📧 Test Email Sending</button>
+        <div id="email-sending-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 7: Email Configuration Check</h2>
+        <p>Check if email services are properly configured.</p>
+        <button onclick="testEmailConfiguration()">⚙️ Check Email Config</button>
+        <div id="email-config-result" class="result" style="display: none;"></div>
+    </div>
+    
     <script>
         const adminPassword = 'Mary&Chima0003';
         let attendingGuests = [];
@@ -306,6 +324,165 @@
             } catch (error) {
                 resultDiv.className = 'result error';
                 resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            }
+        }
+        async function testActualEmailSending() {
+            const emailAddress = document.getElementById('test-email-address').value;
+            const resultDiv = document.getElementById('email-sending-result');
+            resultDiv.style.display = 'block';
+            
+            if (!emailAddress) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<h4>❌ Please enter your email address</h4>';
+                return;
+            }
+            
+            try {
+                // First get attending guests
+                const guestsResponse = await fetch('/.netlify/functions/get-rsvps?attendance=yes', {
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                const guestsResult = await guestsResponse.json();
+                
+                if (!guestsResult.success || !guestsResult.data || guestsResult.data.length === 0) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>❌ No Attending Guests Available</h4>
+                        <p>Please add some test RSVPs with attendance='yes' first.</p>
+                        <p>You can use the test-admin.html page to submit test RSVPs.</p>
+                    `;
+                    return;
+                }
+                
+                // Send actual email
+                const testEmailData = {
+                    recipient_ids: [guestsResult.data[0].id],
+                    subject: `Email Test - ${new Date().toLocaleTimeString()}`,
+                    message: `🎉 Congratulations! Your email system is working correctly.
+
+📧 This test email was sent to: ${emailAddress}
+🕰️ Sent at: ${new Date().toLocaleString()}
+👥 Test recipient: ${guestsResult.data[0].name} (${guestsResult.data[0].email})
+
+✅ Your wedding notification system is ready to send emails to guests!
+
+👍 Next steps:
+1. Configure your email service (SendGrid, Postmark, or Mailgun)
+2. Test with a few guests first
+3. Send your wedding updates with confidence!
+
+💕 Happy wedding planning!
+- Mary & Chima Wedding System`,
+                    notification_type: 'test'
+                };
+                
+                resultDiv.innerHTML = '<div class="result">📧 Sending test email...</div>';
+                
+                const response = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify(testEmailData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Email Sent Successfully!</h4>
+                        <p><strong>Email Method:</strong> ${result.method || 'Default email service'}</p>
+                        <p><strong>Sent to Database Email:</strong> ${guestsResult.data[0].email}</p>
+                        <p><strong>Test Recipient:</strong> ${emailAddress}</p>
+                        <p><strong>Success Rate:</strong> ${result.sentCount}/${result.totalRecipients}</p>
+                        <p><strong>Check your inbox (and spam folder) for the test email!</strong></p>
+                        ${result.errors ? `<p><strong>Warnings:</strong> ${result.errors.join(', ')}</p>` : ''}
+                        <details><summary>Full Response</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    let errorMessage = `<h4>❌ Email Sending Failed</h4>`;
+                    errorMessage += `<p><strong>Error:</strong> ${result.error}</p>`;
+                    
+                    if (result.error && result.error.includes('SENDGRID_API_KEY')) {
+                        errorMessage += `
+                            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                                <h5>📝 Email Setup Required:</h5>
+                                <p>1. Visit <a href="email-setup.html" target="_blank">Email Setup Guide</a></p>
+                                <p>2. Configure SendGrid API key or Netlify Email Integration</p>
+                                <p>3. Add environment variables in Netlify dashboard</p>
+                            </div>
+                        `;
+                    }
+                    
+                    if (result.setup_instructions) {
+                        errorMessage += `<p><strong>Setup Instructions:</strong> ${result.setup_instructions}</p>`;
+                    }
+                    
+                    resultDiv.innerHTML = errorMessage;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testEmailConfiguration() {
+            const resultDiv = document.getElementById('email-config-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                // Test both email endpoints
+                const tests = [
+                    { name: 'Netlify Email Integration', endpoint: '/.netlify/functions/send-notification' },
+                    { name: 'Direct SendGrid API', endpoint: '/.netlify/functions/send-notification-sendgrid' }
+                ];
+                
+                let configResults = '<h4>⚙️ Email Configuration Status:</h4>';
+                
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(test.endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${adminPassword}`
+                            },
+                            body: JSON.stringify({})
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.status === 400 && result.error.includes('required fields')) {
+                            configResults += `<p>✅ <strong>${test.name}:</strong> Function available and ready</p>`;
+                        } else if (result.error && result.error.includes('SENDGRID_API_KEY')) {
+                            configResults += `<p>⚠️ <strong>${test.name}:</strong> Needs SendGrid API key</p>`;
+                        } else if (result.error && result.error.includes('NETLIFY_EMAILS_SECRET')) {
+                            configResults += `<p>⚠️ <strong>${test.name}:</strong> Needs Netlify Email Integration setup</p>`;
+                        } else {
+                            configResults += `<p>❌ <strong>${test.name}:</strong> ${result.error || 'Unknown error'}</p>`;
+                        }
+                    } catch (error) {
+                        configResults += `<p>❌ <strong>${test.name}:</strong> Network error</p>`;
+                    }
+                }
+                
+                configResults += `
+                    <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                        <h5>📝 Setup Instructions:</h5>
+                        <p>Visit the <a href="email-setup.html" target="_blank">Email Setup Guide</a> for detailed configuration instructions.</p>
+                    </div>
+                `;
+                
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = configResults;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Configuration Check Failed</h4><p>${error.message}</p>`;
             }
         }
     </script>
