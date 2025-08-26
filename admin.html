@@ -25,6 +25,29 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .logout-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .admin-info {
+      font-size: 0.9rem;
+      color: #666;
+      font-weight: 500;
+    }
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
     .stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -269,8 +292,16 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>Mary & Chima Wedding</h1>
-      <p>Complete Event Management Dashboard</p>
+      <div class="header-content">
+        <div>
+          <h1>Mary & Chima Wedding</h1>
+          <p>Complete Event Management Dashboard</p>
+        </div>
+        <div class="logout-section">
+          <span class="admin-info">Admin Dashboard</span>
+          <button class="btn btn-danger" onclick="logout()" title="Logout">🚪 Logout</button>
+        </div>
+      </div>
     </div>
 
     <!-- Tab Navigation -->
@@ -558,6 +589,18 @@
         case 'photos': loadPhotos(); break;
         case 'wishes': loadWishes(); break;
         case 'notifications': loadNotifications(); break;
+      }
+    }
+
+    // Logout functionality
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        // Clear any stored session data
+        sessionStorage.clear();
+        localStorage.clear();
+        
+        // Redirect to main website
+        window.location.href = 'index.html';
       }
     }
 
