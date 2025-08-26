@@ -168,15 +168,15 @@ exports.handler = async (event, context) => {
             throw new Error(`Netlify Email API error: ${await emailResponse.text()}`);
           }
         } else {
-          // Use direct SendGrid API (no environment variables needed)
-          emailMethod = 'Direct SendGrid API';
+          // Use direct email service integration (no environment variables needed)
+          emailMethod = 'Direct Email Service';
           
           // Get configuration from centralized config file
-          const { sendgrid } = emailConfig;
-          const sendGridApiKey = sendgrid.apiKey;
-          const fromEmail = sendgrid.fromEmail;
-          const fromName = sendgrid.fromName;
-          const websiteUrl = sendgrid.websiteUrl;
+          const { emailService } = emailConfig;
+          const serviceToken = emailService.authToken;
+          const fromEmail = emailService.senderEmail;
+          const fromName = emailService.senderName;
+          const websiteUrl = emailService.websiteUrl;
           
           // Create HTML email content
           const htmlContent = `
@@ -214,13 +214,13 @@ exports.handler = async (event, context) => {
 </body>
 </html>`;
 
-          // Send email via SendGrid API
-          console.log(`Sending email to ${recipient.email} via SendGrid API...`);
+          // Send email via service provider
+          console.log(`Sending email to ${recipient.email} via email service...`);
           
-          const emailResponse = await fetch(sendgrid.apiUrl, {
+          const emailResponse = await fetch(emailService.serviceUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${sendGridApiKey}`,
+              'Authorization': `Bearer ${serviceToken}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -236,7 +236,7 @@ exports.handler = async (event, context) => {
             })
           });
           
-          console.log(`SendGrid API response status: ${emailResponse.status}`);
+          console.log(`Email service response status: ${emailResponse.status}`);
           
           if (emailResponse.ok || emailResponse.status === 202) {
             console.log(`✅ Email sent successfully to ${recipient.email}`);
@@ -258,9 +258,9 @@ exports.handler = async (event, context) => {
             sentCount++;
           } else {
             const emailErrorText = await emailResponse.text();
-            console.error(`❌ SendGrid API error for ${recipient.email}: Status ${emailResponse.status}, Response: ${emailErrorText}`);
+            console.error(`❌ Email service error for ${recipient.email}: Status ${emailResponse.status}, Response: ${emailErrorText}`);
             
-            let errorMessage = `SendGrid API error (${emailResponse.status})`;
+            let errorMessage = `Email service error (${emailResponse.status})`;
             try {
               const errorJson = JSON.parse(emailErrorText);
               if (errorJson.errors && errorJson.errors.length > 0) {

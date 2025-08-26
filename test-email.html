@@ -31,6 +31,14 @@
     </div>
     <p>Use this page to test and debug the email sending functionality.</p>
     
+    <!-- Step 0: System Diagnostics -->
+    <div class="test-section">
+        <h2>🔍 Step 0: System Diagnostics</h2>
+        <p>First, let's run comprehensive diagnostics to identify the exact issue.</p>
+        <button onclick="runDiagnostics()">🔍 Run Full Diagnostics</button>
+        <div id="diagnostics-results"></div>
+    </div>
+    
     <!-- Step 1: Test RSVP Data -->
     <div class="test-section">
         <h2>📋 Step 1: Check RSVP Data</h2>
@@ -100,6 +108,87 @@
     <script>
         const adminPassword = 'Mary&Chima0003';
         let attendingGuests = [];
+        
+        // Run comprehensive diagnostics
+        async function runDiagnostics() {
+            const resultsDiv = document.getElementById('diagnostics-results');
+            resultsDiv.innerHTML = '<div class="info">🔍 Running comprehensive diagnostics...</div>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/test-email-config', {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                
+                const result = await response.json();
+                console.log('Diagnostics result:', result);
+                
+                let html = '';
+                
+                if (result.success && result.diagnostics) {
+                    const diag = result.diagnostics;
+                    
+                    // Service Credentials Status
+                    html += `<div class="${diag.credentials.available && diag.credentials.format === 'valid' ? 'success' : 'error'}">`;
+                    html += `<strong>🔑 Service Credentials Status:</strong><br>`;
+                    html += `• Available: ${diag.credentials.available}<br>`;
+                    html += `• Source: ${diag.credentials.source}<br>`;
+                    html += `• Length: ${diag.credentials.length}<br>`;
+                    html += `• Format: ${diag.credentials.format}<br>`;
+                    if (diag.credentials.error) {
+                        html += `• Error: ${diag.credentials.error}<br>`;
+                    }
+                    html += '</div>';
+                    
+                    // Service Connection Test
+                    html += `<div class="${diag.serviceConnection.success ? 'success' : 'error'}">`;
+                    html += `<strong>🔗 Email Service Test:</strong><br>`;
+                    html += `• Tested: ${diag.serviceConnection.tested}<br>`;
+                    if (diag.serviceConnection.tested) {
+                        html += `• Status: ${diag.serviceConnection.status}<br>`;
+                        html += `• Success: ${diag.serviceConnection.success}<br>`;
+                        if (diag.serviceConnection.error) {
+                            html += `• Error: ${diag.serviceConnection.error}<br>`;
+                        }
+                    }
+                    html += '</div>';
+                    
+                    // Environment Info
+                    html += '<div class="info">';
+                    html += '<strong>⚙️ Environment:</strong><br>';
+                    html += `• Database URL: ${diag.environment.hasNetlifyDbUrl ? 'Available' : 'Missing'}<br>`;
+                    html += `• Service Env Variable: ${diag.environment.hasSendGridKey ? 'Set' : 'Not Set'}<br>`;
+                    html += `• Admin Password: ${diag.environment.hasAdminPassword ? 'Set' : 'Not Set'}<br>`;
+                    html += '</div>';
+                    
+                    // Email Config
+                    html += '<div class="info">';
+                    html += '<strong>📧 Email Configuration:</strong><br>';
+                    html += `• From: ${diag.emailConfig.senderEmail}<br>`;
+                    html += `• Name: ${diag.emailConfig.senderName}<br>`;
+                    html += `• Website: ${diag.emailConfig.websiteUrl}<br>`;
+                    html += '</div>';
+                    
+                    // Raw diagnostics
+                    html += '<div class="info">';
+                    html += '<strong>📊 Full Diagnostics:</strong>';
+                    html += '<pre>' + JSON.stringify(diag, null, 2) + '</pre>';
+                    html += '</div>';
+                    
+                } else {
+                    html = `<div class="error">❌ Diagnostics failed: ${result.error || 'Unknown error'}</div>`;
+                    if (result.details) {
+                        html += `<div class="error">Details: ${result.details}</div>`;
+                    }
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Diagnostics error:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Diagnostics network error: ${error.message}</div>`;
+            }
+        }
         
         // Test RSVP data
         async function testRSVPData() {
@@ -329,9 +418,10 @@
             }
         }
         
-        // Load RSVP data on page load
-        window.addEventListener('load', function() {
-            testRSVPData();
+        // Load diagnostics and RSVP data on page load
+        window.addEventListener('load', async function() {
+            await runDiagnostics();
+            await testRSVPData();
         });
     </script>
 </body>
