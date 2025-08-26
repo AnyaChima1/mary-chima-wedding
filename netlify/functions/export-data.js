@@ -27,11 +27,13 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Basic authentication check
+    // Basic authentication check - accept from header or query param for downloads
     const authHeader = event.headers.authorization;
+    const { authorization } = event.queryStringParameters || {};
     const expectedAuth = process.env.ADMIN_PASSWORD || 'Mary&Chima0003';
     
-    if (expectedAuth && (!authHeader || authHeader !== `Bearer ${expectedAuth}`)) {
+    const providedAuth = authHeader || authorization;
+    if (expectedAuth && (!providedAuth || providedAuth !== `Bearer ${expectedAuth}`)) {
       return {
         statusCode: 401,
         headers,

@@ -2019,14 +2019,18 @@ img, video, iframe {
 /* Photo Modal Enhancements */
 .photo-modal-content {
   max-width: 900px;
+  width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal__tabs {
   display: flex;
   border-bottom: 2px solid #f0f0f0;
   margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 .tab-btn {
@@ -2055,18 +2059,34 @@ img, video, iframe {
 
 .tab-content {
   display: none;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .tab-content.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
 }
 
 /* Upload Method Selector */
 .upload-method-selector {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin: 24px 0;
+}
+
+@media (min-width: 640px) {
+  .upload-method-selector {
+    flex-direction: row;
+    gap: 16px;
+  }
 }
 
 .method-option {
@@ -2077,6 +2097,7 @@ img, video, iframe {
   cursor: pointer;
   transition: var(--transition-smooth);
   background: #fafafa;
+  flex: 1;
 }
 
 .method-option:hover {
@@ -2469,23 +2490,62 @@ img, video, iframe {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .photo-modal-content {
+    width: 98vw;
+    max-height: 95vh;
+  }
+  
+  .modal__tabs {
+    flex-direction: row; /* Keep horizontal on mobile */
+  }
+  
+  .tab-btn {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+  
+  .modal__body {
+    padding: 16px;
+  }
+  
   .upload-method-selector {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 12px;
   }
   
+  .method-option {
+    padding: 16px;
+  }
+  
+  .method-icon {
+    font-size: 28px;
+  }
+  
+  .method-title {
+    font-size: 15px;
+  }
+  
+  .method-desc {
+    font-size: 13px;
+  }
+  
   .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
   
   .gallery-filters {
     gap: 6px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 8px;
   }
   
   .filter-btn {
     font-size: 13px;
     padding: 6px 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   
   .lightbox-prev {
@@ -2504,6 +2564,11 @@ img, video, iframe {
   .lightbox-media img,
   .lightbox-media video {
     max-height: 60vh;
+  }
+  
+  .lightbox-info {
+    padding: 12px;
+    margin: 0 10px;
   }
 }
 

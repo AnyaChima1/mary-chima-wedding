@@ -732,11 +732,18 @@ function openPhotoModal(tab = 'share') {
 // Switch between photo modal tabs
 function switchPhotoTab(tab) {
   // Update tab buttons
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  event?.target?.classList.add('active') || document.querySelector(`.tab-btn:${tab === 'share' ? 'first' : 'last'}-child`).classList.add('active');
+  document.querySelectorAll('#photo-modal .tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  // Find and activate the correct tab button
+  const tabButtons = document.querySelectorAll('#photo-modal .tab-btn');
+  if (tab === 'share') {
+    tabButtons[0].classList.add('active');
+  } else if (tab === 'gallery') {
+    tabButtons[1].classList.add('active');
+  }
   
   // Update tab content
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  document.querySelectorAll('#photo-modal .tab-content').forEach(content => content.classList.remove('active'));
   document.getElementById(tab === 'share' ? 'share-tab' : 'gallery-tab').classList.add('active');
   
   // Load gallery if switching to gallery tab

@@ -53,7 +53,7 @@ exports.handler = async (event, context) => {
       query = sql`
         SELECT 
           id, name, email, attendance, guest_count, 
-          guest_names, dietary_requirements, special_message,
+          guest_names, dietary_requirements, phone, table_number,
           created_at, updated_at
         FROM rsvps 
         WHERE attendance = ${attendance}
@@ -67,7 +67,7 @@ exports.handler = async (event, context) => {
       query = sql`
         SELECT 
           id, name, email, attendance, guest_count,
-          guest_names, dietary_requirements, special_message,
+          guest_names, dietary_requirements, phone, table_number,
           created_at, updated_at
         FROM rsvps 
         ORDER BY created_at DESC 

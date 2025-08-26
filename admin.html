@@ -204,10 +204,17 @@
       align-items: center;
       gap: 8px;
       margin: 4px 0;
+      padding: 8px;
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
     }
     .selected-item {
       background: #e3f2fd;
       border: 2px solid #2196f3;
+      border-radius: 8px;
     }
     .btn {
       padding: 10px 20px;
@@ -217,6 +224,7 @@
       font-weight: 600;
       text-decoration: none;
       display: inline-block;
+      transition: all 0.3s ease;
     }
     .btn-primary {
       background: #c8a951;
@@ -225,6 +233,10 @@
     .btn-secondary {
       background: #f0f0f0;
       color: #333;
+    }
+    .btn:hover {
+      opacity: 0.8;
+      transform: translateY(-1px);
     }
     .rsvp-list {
       background: white;
@@ -702,9 +714,10 @@
     function exportData(type) {
       if (!requireAuth()) return;
       
-      const url = `/.netlify/functions/export-data?type=${type}`;
+      const url = `/.netlify/functions/export-data?type=${type}&authorization=${encodeURIComponent('Bearer ' + adminPassword)}`;
       const link = document.createElement('a');
       link.href = url;
+      link.download = `wedding_${type}_${new Date().toISOString().split('T')[0]}.csv`;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
@@ -781,21 +794,26 @@
     }
 
     // Data Loading Functions with Authentication
-    async function loadRSVPs() {
+    async function loadRSVPs(filter = '') {
       if (!requireAuth()) return;
       
       try {
-        const response = await fetch('/.netlify/functions/get-rsvps', {
+        let url = '/.netlify/functions/get-rsvps';
+        if (filter && filter !== '') {
+          url += `?attendance=${filter}`;
+        }
+        
+        const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${adminPassword}` }
         });
         const result = await response.json();
         
         if (result.success) {
-          // Update stats
-          document.getElementById('total-responses').textContent = result.data.length;
-          document.getElementById('attending').textContent = result.data.filter(r => r.attendance === 'yes').length;
-          document.getElementById('not-attending').textContent = result.data.filter(r => r.attendance === 'no').length;
-          document.getElementById('total-guests').textContent = result.data.reduce((sum, r) => sum + (r.party_size || 1), 0);
+          // Update stats using the statistics from the response
+          document.getElementById('total-responses').textContent = result.statistics?.total_responses || result.data.length;
+          document.getElementById('attending').textContent = result.statistics?.attending || result.data.filter(r => r.attendance === 'yes').length;
+          document.getElementById('not-attending').textContent = result.statistics?.not_attending || result.data.filter(r => r.attendance === 'no').length;
+          document.getElementById('total-guests').textContent = result.statistics?.total_guests || result.data.reduce((sum, r) => sum + (r.guest_count || 1), 0);
           
           // Display RSVP list
           displayRSVPs(result.data);
@@ -808,6 +826,28 @@
       }
     }
 
+    // Filter RSVPs function
+    function filterRSVPs(attendance) {
+      loadRSVPs(attendance);
+      
+      // Update button states
+      const buttons = document.querySelectorAll('#rsvps-content .controls .btn--secondary');
+      buttons.forEach(btn => btn.style.backgroundColor = '#f0f0f0');
+      buttons.forEach(btn => btn.style.color = '#333');
+      
+      // Highlight active button
+      if (attendance === 'yes' && buttons[0]) {
+        buttons[0].style.backgroundColor = '#c8a951';
+        buttons[0].style.color = 'white';
+      } else if (attendance === 'no' && buttons[1]) {
+        buttons[1].style.backgroundColor = '#c8a951';
+        buttons[1].style.color = 'white';
+      } else if (attendance === '' && buttons[2]) {
+        buttons[2].style.backgroundColor = '#c8a951';
+        buttons[2].style.color = 'white';
+      }
+    }
+
     function displayRSVPs(rsvps) {
       const container = document.getElementById('rsvp-list');
       if (rsvps.length === 0) {
@@ -816,14 +856,18 @@
       }
       
       container.innerHTML = rsvps.map(rsvp => `
-        <div class="rsvp-item">
+        <div class="rsvp-item" data-id="${rsvp.id}">
+          ${multiSelectMode['rsvps'] ? `<div class="checkbox-item">
+            <input type="checkbox" id="rsvp-${rsvp.id}" onchange="toggleSelection('rsvps', ${rsvp.id})">
+            <label for="rsvp-${rsvp.id}"></label>
+          </div>` : ''}
           <div class="rsvp-details">
             <h3>${rsvp.name}</h3>
             <p><strong>Email:</strong> ${rsvp.email}</p>
             <p><strong>Phone:</strong> ${rsvp.phone || 'Not provided'}</p>
-            <p><strong>Party Size:</strong> ${rsvp.party_size || 1}</p>
+            <p><strong>Party Size:</strong> ${rsvp.guest_count || 1}</p>
             <p><strong>Additional Guests:</strong> ${rsvp.guest_names || 'None'}</p>
-            <p><strong>Dietary:</strong> ${rsvp.dietary_needs || 'None'}</p>
+            <p><strong>Dietary:</strong> ${rsvp.dietary_requirements || 'None'}</p>
             <p><strong>Submitted:</strong> ${new Date(rsvp.created_at).toLocaleDateString()}</p>
           </div>
           <div>
@@ -833,6 +877,34 @@
           </div>
         </div>
       `).join('');
+    }
+
+    // Selection toggle function
+    function toggleSelection(type, id) {
+      if (!selectedItems[type]) selectedItems[type] = [];
+      
+      const index = selectedItems[type].indexOf(id);
+      if (index > -1) {
+        selectedItems[type].splice(index, 1);
+      } else {
+        selectedItems[type].push(id);
+      }
+      
+      // Update UI feedback
+      const item = document.querySelector(`[data-id="${id}"]`);
+      if (item) {
+        if (selectedItems[type].includes(id)) {
+          item.classList.add('selected-item');
+        } else {
+          item.classList.remove('selected-item');
+        }
+      }
+      
+      // Update delete button
+      const deleteBtn = document.getElementById(`delete-${type}-btn`);
+      if (deleteBtn) {
+        deleteBtn.textContent = `🗑️ Delete Selected (${selectedItems[type].length})`;
+      }
     }
 
     async function loadIndividualGuests() {
@@ -1056,6 +1128,61 @@
       // Placeholder for notifications - would need a notifications table/function
       document.getElementById('notifications-list').innerHTML = '<div class="loading">Notification history feature coming soon</div>';
     }
+
+    // Notification sending functionality
+    async function sendNotification() {
+      if (!requireAuth()) return;
+      
+      const form = document.getElementById('notification-form');
+      const formData = new FormData(form);
+      const selectedRecipients = Array.from(document.getElementById('notification-recipients').selectedOptions).map(option => option.value);
+      
+      if (selectedRecipients.length === 0) {
+        alert('Please select at least one recipient');
+        return;
+      }
+      
+      const notificationData = {
+        recipients: selectedRecipients,
+        subject: formData.get('subject'),
+        message: formData.get('message')
+      };
+      
+      try {
+        const response = await fetch('/.netlify/functions/send-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminPassword}`
+          },
+          body: JSON.stringify(notificationData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(`Notification sent to ${selectedRecipients.length} recipients!`);
+          hideNotificationComposer();
+          form.reset();
+        } else {
+          alert('Error sending notification: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Notification error:', error);
+        alert('Error sending notification. Please try again.');
+      }
+    }
+    
+    // Setup notification form submission
+    document.addEventListener('DOMContentLoaded', function() {
+      const notificationForm = document.getElementById('notification-form');
+      if (notificationForm) {
+        notificationForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          sendNotification();
+        });
+      }
+    });
     
     // Note: Initial data loading is now handled by showDashboard() after authentication
   </script>
