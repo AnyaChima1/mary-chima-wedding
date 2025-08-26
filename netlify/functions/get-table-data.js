@@ -118,12 +118,12 @@ exports.handler = async (event, context) => {
     const totalAssigned = Object.values(tableGroups).reduce((sum, table) => sum + table.total_guests, 0);
     const totalUnassigned = unassigned.length;
 
-    // Calculate table utilization (assuming 8-10 guests per table)
+    // Calculate table utilization (assuming 4 guests per table for 50 total guests)
     const tableUtilization = Object.entries(tableGroups).map(([tableNum, table]) => ({
       table_number: parseInt(tableNum),
       current_guests: table.total_guests,
-      recommended_capacity: 8,
-      utilization_percentage: Math.round((table.total_guests / 8) * 100)
+      recommended_capacity: 4,
+      utilization_percentage: Math.round((table.total_guests / 4) * 100)
     }));
 
     return {

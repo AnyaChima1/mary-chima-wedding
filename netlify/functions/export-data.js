@@ -211,9 +211,36 @@ exports.handler = async (event, context) => {
         ].join(',');
         csvData += row + '\n';
       });
+    } else if (type === 'notifications') {
+      // Export notifications
+      const notifications = await sql`
+        SELECT 
+          id, subject, message, notification_type, recipient_count,
+          sent_count, failed_count, status, created_at
+        FROM notifications
+        ORDER BY created_at DESC
+      `;
+      
+      csvData += 'Notifications History\n';
+      csvData += 'ID,Subject,Message,Type,Recipients,Sent,Failed,Status,Date\n';
+      
+      notifications.forEach(notification => {
+        const row = [
+          notification.id,
+          `"${notification.subject}"`,
+          `"${notification.message}"`,
+          notification.notification_type,
+          notification.recipient_count,
+          notification.sent_count,
+          notification.failed_count,
+          notification.status,
+          new Date(notification.created_at).toLocaleDateString()
+        ].join(',');
+        csvData += row + '\n';
+      });
     } else {
       // Fallback for unrecognized types
-      csvData = `Error: Unknown export type '${type}'. Supported types: guests, tables, rsvps, songs, photos, wishes, all`;
+      csvData = `Error: Unknown export type '${type}'. Supported types: guests, tables, rsvps, songs, photos, wishes, notifications, all`;
     }
 
     return {

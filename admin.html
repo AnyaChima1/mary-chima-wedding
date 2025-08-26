@@ -191,6 +191,11 @@
       border-color: #c8a951;
       background-color: #f9f7e8;
     }
+    .guest-item.selected {
+      background-color: #e3f2fd;
+      border: 2px solid #2196f3;
+      transform: scale(1.02);
+    }
     .notification-composer {
       background: white;
       padding: 20px;
@@ -511,6 +516,7 @@
         <button class="btn btn-primary" onclick="loadTableData()">Refresh Tables</button>
         <button class="btn btn-secondary" onclick="showUnassigned()">Show Unassigned</button>
         <button class="btn btn-info" onclick="autoAssignTables()">🤖 Auto-Assign</button>
+        <button class="btn btn-warning" onclick="unassignSelected()">❌ Unassign Selected</button>
         <button class="btn btn-success" onclick="exportData('tables')">📊 Export Seating Plan</button>
       </div>
 
@@ -548,6 +554,9 @@
       <div class="controls">
         <button class="btn btn-primary" onclick="loadNotifications()">Refresh</button>
         <button class="btn btn-success" onclick="sendBulkNotification()">📧 Send Bulk Notification</button>
+        <button class="btn btn-success" onclick="exportData('notifications')">📊 Export Notifications</button>
+        <button class="btn btn-warning" onclick="toggleMultiSelect('notifications')">✓ Multi-Select</button>
+        <button class="btn btn-danger" onclick="deleteSelected('notifications')" style="display:none" id="delete-notifications-btn">🗑️ Delete Selected</button>
       </div>
 
       <!-- Notification Composer -->
@@ -596,6 +605,9 @@
 
       <div class="controls">
         <button class="btn btn-primary" onclick="loadSongs()">Refresh Songs</button>
+        <button class="btn btn-success" onclick="exportData('songs')">📊 Export Songs</button>
+        <button class="btn btn-warning" onclick="toggleMultiSelect('songs')">✓ Multi-Select</button>
+        <button class="btn btn-danger" onclick="deleteSelected('songs')" style="display:none" id="delete-songs-btn">🗑️ Delete Selected</button>
       </div>
 
       <div id="songs-error-container"></div>
@@ -623,6 +635,9 @@
         <button class="btn btn-secondary" onclick="filterPhotos('reception')">Reception</button>
         <button class="btn btn-secondary" onclick="filterPhotos('dancing')">Dancing</button>
         <button class="btn btn-secondary" onclick="filterPhotos('all')">All Categories</button>
+        <button class="btn btn-success" onclick="exportData('photos')">📊 Export Photos</button>
+        <button class="btn btn-warning" onclick="toggleMultiSelect('photos')">✓ Multi-Select</button>
+        <button class="btn btn-danger" onclick="deleteSelected('photos')" style="display:none" id="delete-photos-btn">🗑️ Delete Selected</button>
       </div>
 
       <div id="photos-error-container"></div>
@@ -650,6 +665,9 @@
         <button class="btn btn-secondary" onclick="filterWishes('prayer')">Prayers</button>
         <button class="btn btn-secondary" onclick="filterWishes('advice')">Advice</button>
         <button class="btn btn-secondary" onclick="filterWishes('all')">All Types</button>
+        <button class="btn btn-success" onclick="exportData('wishes')">📊 Export Wishes</button>
+        <button class="btn btn-warning" onclick="toggleMultiSelect('wishes')">✓ Multi-Select</button>
+        <button class="btn btn-danger" onclick="deleteSelected('wishes')" style="display:none" id="delete-wishes-btn">🗑️ Delete Selected</button>
       </div>
 
       <div id="wishes-error-container"></div>
@@ -816,8 +834,8 @@
         case 'photos':
           filename = `wedding_photos_${new Date().toISOString().split('T')[0]}.csv`;
           break;
-        case 'wishes':
-          filename = `wedding_wishes_${new Date().toISOString().split('T')[0]}.csv`;
+        case 'notifications':
+          filename = `wedding_notifications_${new Date().toISOString().split('T')[0]}.csv`;
           break;
         default:
           filename = `wedding_${type}_${new Date().toISOString().split('T')[0]}.csv`;
@@ -1378,9 +1396,9 @@
       
       container.innerHTML = tableData.tables.map(table => {
         const guestCount = table.total_guests || table.guests.length;
-        const capacity = 8;
+        const capacity = 4; // Changed to 4 guests per table for 50 total guests
         const isOverCapacity = guestCount > capacity;
-        const isOptimal = guestCount >= 6 && guestCount <= capacity;
+        const isOptimal = guestCount === capacity;
         
         return `
           <div class="table-card drop-zone ${isOverCapacity ? 'full' : isOptimal ? 'optimal' : ''}">
@@ -1393,11 +1411,12 @@
                 <div class="guest-item draggable ${guest.is_primary ? 'guest-primary' : ''}" 
                      data-guest-id="${guest.guest_id}" 
                      draggable="true"
-                     title="Drag to move to different table">
+                     onclick="toggleGuestSelection(this)"
+                     title="Click to select, drag to move to different table">
                   <span>${guest.name}</span>
                   ${guest.dietary_needs ? '<small style="color: #666;">🥗 Special diet</small>' : ''}
                 </div>
-              `).join('')}
+              `).join('')}}
               ${guestCount < capacity ? `<div class="drop-hint" style="padding: 8px; text-align: center; color: #999; font-size: 12px; border: 1px dashed #ddd; margin: 4px 0; border-radius: 4px;">Drop guests here (${capacity - guestCount} spaces left)</div>` : ''}
             </div>
             ${table.dietary_requirements && table.dietary_requirements.length > 0 ? `
@@ -1467,10 +1486,16 @@
       }
       
       container.innerHTML = songs.map(song => `
-        <div class="rsvp-item">
+        <div class="rsvp-item" data-item-id="${song.id}">
+          ${multiSelectMode.songs ? `
+            <div class="checkbox-item">
+              <input type="checkbox" id="song-${song.id}" onchange="updateSelectedCount('songs')">
+              <label for="song-${song.id}">Select</label>
+            </div>
+          ` : ''}
           <div class="rsvp-details">
             <h3>${song.song_title}</h3>
-            <p><strong>Artist:</strong> ${song.artist}</p>
+            <p><strong>Artist:</strong> ${song.artist_name}</p>
             <p><strong>Genre:</strong> ${song.genre || 'Not specified'}</p>
             <p><strong>Requested by:</strong> ${song.name} (${song.email})</p>
             <p><strong>Date:</strong> ${new Date(song.created_at).toLocaleDateString()}</p>
@@ -1507,7 +1532,13 @@
       }
       
       container.innerHTML = photos.map(photo => `
-        <div class="rsvp-item">
+        <div class="rsvp-item" data-item-id="${photo.id}">
+          ${multiSelectMode.photos ? `
+            <div class="checkbox-item">
+              <input type="checkbox" id="photo-${photo.id}" onchange="updateSelectedCount('photos')">
+              <label for="photo-${photo.id}">Select</label>
+            </div>
+          ` : ''}
           <div class="rsvp-details">
             <h3>${photo.name}</h3>
             <p><strong>Email:</strong> ${photo.email}</p>
@@ -1520,24 +1551,31 @@
       `).join('');
     }
 
-    async function loadWishes() {
-      if (!requireAuth()) return;
-      
-      try {
-        const response = await fetch('/.netlify/functions/get-wishes', {
-          headers: { 'Authorization': `Bearer ${adminPassword}` }
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-          document.getElementById('total-wishes').textContent = result.data.length;
-          document.getElementById('popular-message-type').textContent = result.statistics?.most_popular_type || 'N/A';
-          displayWishes(result.data);
-        }
-      } catch (error) {
-        console.error('Error loading wishes:', error);
-        document.getElementById('wishes-list').innerHTML = '<div class="error">Error loading wishes</div>';
+    function displayWishes(wishes) {
+      const container = document.getElementById('wishes-list');
+      if (wishes.length === 0) {
+        container.innerHTML = '<div class="loading">No wishes yet</div>';
+        return;
       }
+      
+      container.innerHTML = wishes.map(wish => `
+        <div class="rsvp-item" data-item-id="${wish.id}">
+          ${multiSelectMode.wishes ? `
+            <div class="checkbox-item">
+              <input type="checkbox" id="wish-${wish.id}" onchange="updateSelectedCount('wishes')">
+              <label for="wish-${wish.id}">Select</label>
+            </div>
+          ` : ''}
+          <div class="rsvp-details">
+            <h3>${wish.name}</h3>
+            <p><strong>Email:</strong> ${wish.email}</p>
+            <p><strong>Type:</strong> ${wish.message_type}</p>
+            <p><strong>Relationship:</strong> ${wish.relationship || 'Not specified'}</p>
+            <p><strong>Message:</strong> ${wish.message}</p>
+            <p><strong>Date:</strong> ${new Date(wish.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `).join('');
     }
 
     function displayWishes(wishes) {
@@ -1548,7 +1586,13 @@
       }
       
       container.innerHTML = wishes.map(wish => `
-        <div class="rsvp-item">
+        <div class="rsvp-item" data-item-id="${wish.id}">
+          ${multiSelectMode.wishes ? `
+            <div class="checkbox-item">
+              <input type="checkbox" id="wish-${wish.id}" onchange="updateSelectedCount('wishes')">
+              <label for="wish-${wish.id}">Select</label>
+            </div>
+          ` : ''}
           <div class="rsvp-details">
             <h3>${wish.name}</h3>
             <p><strong>Email:</strong> ${wish.email}</p>
@@ -1563,10 +1607,210 @@
     async function loadNotifications() {
       if (!requireAuth()) return;
       
-      // Placeholder for notifications - would need a notifications table/function
-      document.getElementById('notifications-list').innerHTML = '<div class="loading">Notification history feature coming soon</div>';
+      try {
+        const response = await fetch('/.netlify/functions/get-notifications', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          // Update stats
+          document.getElementById('notification-count').textContent = result.statistics?.total_notifications || result.data.length;
+          document.getElementById('notified-guests').textContent = result.statistics?.total_recipients || 0;
+          
+          // Display notifications list
+          displayNotifications(result.data);
+        } else {
+          document.getElementById('notifications-list').innerHTML = '<div class="error">Error loading notifications</div>';
+        }
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+        document.getElementById('notifications-list').innerHTML = '<div class="error">Error loading notifications</div>';
+      }
     }
-
+    
+    function displayNotifications(notifications) {
+      const container = document.getElementById('notifications-list');
+      if (notifications.length === 0) {
+        container.innerHTML = '<div class="loading">No notifications sent yet</div>';
+        return;
+      }
+      
+      container.innerHTML = notifications.map(notification => `
+        <div class="rsvp-item" data-item-id="${notification.id}">
+          ${multiSelectMode.notifications ? `
+            <div class="checkbox-item">
+              <input type="checkbox" id="notification-${notification.id}" onchange="updateSelectedCount('notifications')">
+              <label for="notification-${notification.id}">Select</label>
+            </div>
+          ` : ''}
+          <div class="rsvp-details">
+            <h3>${notification.subject}</h3>
+            <p><strong>Message:</strong> ${notification.message}</p>
+            <p><strong>Type:</strong> ${notification.notification_type}</p>
+            <p><strong>Recipients:</strong> ${notification.recipient_count}</p>
+            <p><strong>Success Rate:</strong> ${notification.sent_count}/${notification.recipient_count} sent</p>
+            <p><strong>Status:</strong> <span class="attendance-badge ${notification.status}">${notification.status}</span></p>
+            <p><strong>Date:</strong> ${new Date(notification.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    async function loadWishes() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-wishes', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          document.getElementById('total-wishes').textContent = result.statistics?.total_wishes || result.data.length;
+          document.getElementById('popular-message-type').textContent = result.statistics?.type_breakdown?.[0]?.message_type || 'N/A';
+          displayWishes(result.data);
+        } else {
+          document.getElementById('wishes-list').innerHTML = '<div class="error">Error loading wishes</div>';
+        }
+      } catch (error) {
+        console.error('Error loading wishes:', error);
+        document.getElementById('wishes-list').innerHTML = '<div class="error">Error loading wishes</div>';
+      }
+    }
+    
+    async function filterPhotos(category) {
+      if (!requireAuth()) return;
+      
+      try {
+        let url = '/.netlify/functions/get-photos?admin_only=true';
+        if (category && category !== 'all') {
+          url += `&category=${category}`;
+        }
+        
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          displayPhotos(result.data);
+        } else {
+          document.getElementById('photos-list').innerHTML = '<div class="error">Error filtering photos</div>';
+        }
+      } catch (error) {
+        console.error('Error filtering photos:', error);
+        document.getElementById('photos-list').innerHTML = '<div class="error">Error filtering photos</div>';
+      }
+    }
+    
+    async function filterWishes(messageType) {
+      if (!requireAuth()) return;
+      
+      try {
+        let url = '/.netlify/functions/get-wishes';
+        if (messageType && messageType !== 'all') {
+          url += `?message_type=${messageType}`;
+        }
+        
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          displayWishes(result.data);
+        } else {
+          document.getElementById('wishes-list').innerHTML = '<div class="error">Error filtering wishes</div>';
+        }
+      } catch (error) {
+        console.error('Error filtering wishes:', error);
+        document.getElementById('wishes-list').innerHTML = '<div class="error">Error filtering wishes</div>';
+      }
+    }
+    
+    // Update selected count for multi-select
+    function updateSelectedCount(type) {
+      if (!multiSelectMode[type]) return;
+      
+      const checkedBoxes = document.querySelectorAll(`#${type}-content input[type="checkbox"]:checked`);
+      selectedItems[type] = Array.from(checkedBoxes).map(cb => {
+        const itemElement = cb.closest('[data-item-id]');
+        return itemElement ? parseInt(itemElement.dataset.itemId) : null;
+      }).filter(id => id !== null);
+      
+      const deleteBtn = document.getElementById(`delete-${type}-btn`);
+      if (deleteBtn) {
+        deleteBtn.textContent = `🗑️ Delete Selected (${selectedItems[type].length})`;
+      }
+    }
+    
+    // Guest selection for table management
+    let selectedGuests = [];
+    
+    function toggleGuestSelection(guestElement) {
+      const guestId = parseInt(guestElement.dataset.guestId);
+      
+      if (guestElement.classList.contains('selected')) {
+        guestElement.classList.remove('selected');
+        selectedGuests = selectedGuests.filter(id => id !== guestId);
+      } else {
+        guestElement.classList.add('selected');
+        selectedGuests.push(guestId);
+      }
+      
+      // Update unassign button text
+      const unassignBtn = document.querySelector('button[onclick="unassignSelected()"]');
+      if (unassignBtn) {
+        unassignBtn.textContent = selectedGuests.length > 0 
+          ? `❌ Unassign Selected (${selectedGuests.length})`
+          : '❌ Unassign Selected';
+      }
+    }
+    
+    async function unassignSelected() {
+      if (!requireAuth()) return;
+      
+      if (selectedGuests.length === 0) {
+        alert('Please select guests to unassign by clicking on them.');
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to unassign ${selectedGuests.length} guest(s) from their tables?`)) {
+        return;
+      }
+      
+      try {
+        const assignments = selectedGuests.map(guestId => ({
+          guest_id: guestId,
+          table_number: null // null = unassigned
+        }));
+        
+        const response = await fetch('/.netlify/functions/update-table-assignments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminPassword}`
+          },
+          body: JSON.stringify({ assignments })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(`✅ Successfully unassigned ${result.updated_count} guests!`);
+          selectedGuests = []; // Clear selection
+          loadTableData(); // Refresh the table display
+        } else {
+          alert(`❌ Unassignment failed: ${result.error}`);
+        }
+        
+      } catch (error) {
+        console.error('Error unassigning guests:', error);
+        alert('Error unassigning guests. Please try again.');
+      }
+    }
+    
     // Notification sending functionality
     async function sendNotification() {
       if (!requireAuth()) return;
@@ -1687,21 +1931,15 @@
             errorMessage += '\n\n📝 Setup Required: Please configure email service:\n';
             errorMessage += '1. Set SENDGRID_API_KEY environment variable in Netlify\n';
             errorMessage += '2. Or configure Netlify Email Integration\n';
-            errorMessage += '3. See setup instructions in admin dashboard';
-          }
-          
-          if (result.setup_instructions) {
-            errorMessage += '\n\n🔗 ' + result.setup_instructions;
           }
           
           alert(errorMessage);
-          console.error('Notification API error:', result);
         }
-      } catch (error) {
-        console.error('RSVP notification error:', error);
-        alert('❌ Network error sending notification. Please check your connection and try again.');
+      } catch (err) {
+        console.error('Error sending RSVP notification:', err);
+        alert('Error sending RSVP notification. Please try again.');
       } finally {
-        // Reset button state
+        // Restore button text and re-enable button
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
       }
@@ -1841,7 +2079,7 @@
         
         // Count current assignments per table
         const tableCapacity = {};
-        const maxGuestsPerTable = 8;
+        const maxGuestsPerTable = 4; // Changed to 4 for 50 total guests
         
         // Initialize table capacity tracking
         result.data.tables.forEach(table => {
