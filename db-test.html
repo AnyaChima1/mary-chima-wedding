@@ -77,14 +77,23 @@
     <h1>🔧 Database Connection Test</h1>
     
     <div class="test-section">
-        <h2>1. Database Connection Test</h2>
+        <h2>1. Database Migration (Fix Missing Columns)</h2>
+        <p style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 5px; border-left: 4px solid #ffc107;">
+            <strong>⚠️ Run this first!</strong> This will add missing columns (file_data, filename, file_type) to your existing photo_shares table.
+        </p>
+        <button class="test-btn" onclick="runMigration()" style="background: #28a745; font-weight: bold;">🔧 Fix Database Schema</button>
+        <div id="migration-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Database Connection Test</h2>
         <p>Test basic database connectivity and table structure.</p>
         <button class="test-btn" onclick="testDatabase()">🔍 Test Database Connection</button>
         <div id="db-test-result"></div>
     </div>
     
     <div class="test-section">
-        <h2>2. URL Photo Submission Test</h2>
+        <h2>3. URL Photo Submission Test</h2>
         <p>Test the submit-photo function with a URL.</p>
         <form id="url-test-form">
             <div class="form-group">
@@ -118,7 +127,7 @@
     </div>
     
     <div class="test-section">
-        <h2>3. File Upload Test</h2>
+        <h2>4. File Upload Test</h2>
         <p>Test the upload-photo function with a small base64 image.</p>
         <form id="file-test-form">
             <div class="form-group">
@@ -172,6 +181,30 @@
                 element.innerHTML = `<div class="success">✅ Success: ${JSON.stringify(data, null, 2)}</div>`;
             } else {
                 element.innerHTML = `<div class="error">❌ Error: ${JSON.stringify(data, null, 2)}</div>`;
+            }
+        }
+
+        async function runMigration() {
+            log('Starting database migration...');
+            try {
+                const response = await fetch('/.netlify/functions/migrate-db', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                log(`Migration response: ${response.status}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Database migration successful');
+                    showResult('migration-result', true, result);
+                } else {
+                    log('❌ Database migration failed');
+                    showResult('migration-result', false, result);
+                }
+            } catch (error) {
+                log(`❌ Migration error: ${error.message}`);
+                showResult('migration-result', false, { error: error.message });
             }
         }
 

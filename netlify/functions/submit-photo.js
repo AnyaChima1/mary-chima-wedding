@@ -201,9 +201,11 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Create table if it doesn't exist
+    // Create table if it doesn't exist and add missing columns
     try {
       logDebug('CREATING_TABLE', { requestId });
+      
+      // Create base table
       await sql`
         CREATE TABLE IF NOT EXISTS photo_shares (
           id SERIAL PRIMARY KEY,
@@ -212,13 +214,21 @@ exports.handler = async (event, context) => {
           photo_url TEXT NOT NULL,
           description TEXT,
           category VARCHAR(100) DEFAULT 'other',
-          file_data TEXT,
-          filename VARCHAR(500),
-          file_type VARCHAR(100),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `;
+      
+      // Add missing columns if they don't exist
+      try {
+        await sql`ALTER TABLE photo_shares ADD COLUMN IF NOT EXISTS file_data TEXT`;
+        await sql`ALTER TABLE photo_shares ADD COLUMN IF NOT EXISTS filename VARCHAR(500)`;
+        await sql`ALTER TABLE photo_shares ADD COLUMN IF NOT EXISTS file_type VARCHAR(100)`;
+        logDebug('COLUMNS_ADDED', { requestId });
+      } catch (alterError) {
+        logDebug('COLUMNS_EXIST', { requestId, error: alterError.message });
+      }
+      
       logDebug('TABLE_READY', { requestId });
     } catch (error) {
       logError('TABLE_CREATION_ERROR', error, { requestId });

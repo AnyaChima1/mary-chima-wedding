@@ -52,15 +52,41 @@ exports.handler = async (event, context) => {
     const connectionTest = await sql`SELECT NOW() as current_time, version() as pg_version`;
     console.log(`[${testId}] Connection successful:`, connectionTest[0]);
 
-    // Check if photo_shares table exists
-    console.log(`[${testId}] Checking photo_shares table`);
+    // Check if photo_shares table exists and create/update it
+    console.log(`[${testId}] Checking and updating photo_shares table`);
+    
+    // Create base table
+    await sql`
+      CREATE TABLE IF NOT EXISTS photo_shares (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        photo_url TEXT NOT NULL,
+        description TEXT,
+        category VARCHAR(100) DEFAULT 'other',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `;
+    
+    // Add missing columns if they don't exist
+    try {
+      await sql`ALTER TABLE photo_shares ADD COLUMN IF NOT EXISTS file_data TEXT`;
+      await sql`ALTER TABLE photo_shares ADD COLUMN IF NOT EXISTS filename VARCHAR(500)`;
+      await sql`ALTER TABLE photo_shares ADD COLUMN IF NOT EXISTS file_type VARCHAR(100)`;
+      console.log(`[${testId}] Missing columns added successfully`);
+    } catch (alterError) {
+      console.log(`[${testId}] Columns already exist or alter failed:`, alterError.message);
+    }
+    
+    // Check final table structure
     const tableCheck = await sql`
       SELECT table_name, column_name, data_type, is_nullable
       FROM information_schema.columns 
       WHERE table_name = 'photo_shares'
       ORDER BY ordinal_position
     `;
-    console.log(`[${testId}] Table structure:`, tableCheck);
+    console.log(`[${testId}] Updated table structure:`, tableCheck);
 
     // Try to insert a test URL record (like submit-photo)
     console.log(`[${testId}] Testing URL insert`);
