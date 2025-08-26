@@ -90,7 +90,18 @@ exports.handler = async (event, context) => {
     // and store the resulting URL in the database
     
     // Initialize Neon connection
-    const sql = neon();
+    const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      console.error('Database URL not found in environment variables');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Database connection not configured' }),
+      };
+    }
+    
+    console.log('Initializing Neon connection...');
+    const sql = neon(databaseUrl);
 
     // Create table if it doesn't exist (with support for base64 data)
     await sql`
@@ -154,6 +165,8 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('Upload error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request data size:', event.body?.length || 0, 'bytes');
 
     return {
       statusCode: 500,

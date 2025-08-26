@@ -1097,10 +1097,16 @@ photoForm?.addEventListener('submit', async (e) => {
           body: JSON.stringify(uploadData)
         });
         
-        if (response.ok) {
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
           successCount++;
+          console.log(`Successfully uploaded file ${i + 1}:`, result);
         } else {
-          console.error(`Failed to upload file ${i + 1}:`, await response.text());
+          console.error(`Failed to upload file ${i + 1}:`, result.error || 'Unknown error');
+          console.error('Upload response status:', response.status);
+          console.error('Upload response:', result);
+          console.error('Upload data size:', JSON.stringify(uploadData).length, 'characters');
         }
       }
       
@@ -1109,7 +1115,17 @@ photoForm?.addEventListener('submit', async (e) => {
       } else if (successCount > 0) {
         showPhotoSuccess(`Uploaded ${successCount} of ${totalFiles} photos. Some uploads may have failed.`);
       } else {
-        throw new Error('Failed to upload any photos. Please try again.');
+        // Offer fallback to URL sharing with better error messaging
+        console.log('File upload failed for all files, offering URL fallback');
+        const useUrlFallback = confirm('File upload failed. Would you like to try sharing via URL instead?\n\nYou can upload your photos to Google Photos, iCloud, or Dropbox and share the link.');
+        if (useUrlFallback) {
+          // Switch to URL method
+          currentUploadMethod = 'url';
+          selectUploadMethod('url');
+          return; // Don't throw error, let user try URL method
+        } else {
+          throw new Error('Failed to upload any photos. Please try again.');
+        }
       }
     }
     
