@@ -1,17 +1,36 @@
 # Dependencies
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
 
-# Environment files
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Netlify
+.netlify/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Temporary folders
+tmp/
+temp/
 
 # OS generated files
 .DS_Store
@@ -22,36 +41,17 @@ yarn.lock
 ehthumbs.db
 Thumbs.db
 
-# IDE files
+# Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Netlify
-.netlify/
+# Sensitive configuration files (uncomment if needed)
+# email-config.js
+# config/secrets.js
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build outputs
-dist/
-build/
-.cache/
-
-# Temporary files
-*.tmp
-*.temp
-.tmp/
-
-# Backup files
-*.backup
-*.bak
-
-# Archive files (excluding the project zip)
-mary-chima-wedding.zip
+# API keys and secrets (add specific files if needed)
+# secrets.json
+# api-keys.txt

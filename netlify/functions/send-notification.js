@@ -1,4 +1,5 @@
 const { neon } = require('@netlify/neon');
+const emailConfig = require('./email-config');
 
 exports.handler = async (event, context) => {
   // Set CORS headers
@@ -169,10 +170,13 @@ exports.handler = async (event, context) => {
         } else {
           // Use direct SendGrid API (no environment variables needed)
           emailMethod = 'Direct SendGrid API';
-          const sendGridApiKey = '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';
-          const fromEmail = 'info@maryandchima.love';
-          const fromName = 'Mary & Chima Wedding';
-          const websiteUrl = 'https://maryandchima.love';
+          
+          // Get configuration from centralized config file
+          const { sendgrid } = emailConfig;
+          const sendGridApiKey = sendgrid.apiKey;
+          const fromEmail = sendgrid.fromEmail;
+          const fromName = sendgrid.fromName;
+          const websiteUrl = sendgrid.websiteUrl;
           
           // Create HTML email content
           const htmlContent = `
@@ -213,7 +217,7 @@ exports.handler = async (event, context) => {
           // Send email via SendGrid API
           console.log(`Sending email to ${recipient.email} via SendGrid API...`);
           
-          const emailResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
+          const emailResponse = await fetch(sendgrid.apiUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${sendGridApiKey}`,

@@ -40,7 +40,7 @@ exports.handler = async (event, context) => {
     }
 
     // Check if SendGrid API key is available (hardcoded fallback for free Netlify plans)
-    const sendGridApiKey = process.env.SENDGRID_API_KEY || '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';
+    const sendGridApiKey = process.env.SENDGRID_API_KEY || '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';
     if (!sendGridApiKey || sendGridApiKey === 'your_sendgrid_api_key') {
       return {
         statusCode: 500,
