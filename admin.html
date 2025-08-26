@@ -562,15 +562,107 @@
     </div>
   </div>
 
+  <!-- Login Modal -->
+  <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); width: 400px; max-width: 90%;">
+      <h2 style="text-align: center; margin-bottom: 30px; color: #c8a951;">Admin Login</h2>
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Password:</label>
+        <input type="password" id="login-password" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;" placeholder="Enter admin password">
+      </div>
+      <div id="login-error" style="color: #f44336; margin-bottom: 20px; text-align: center; display: none;"></div>
+      <div style="text-align: center;">
+        <button onclick="attemptLogin()" style="background: #c8a951; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-right: 10px;">Login</button>
+        <button onclick="window.location.href='index.html'" style="background: #f0f0f0; color: #333; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentFilter = '';
     let currentTab = 'rsvps';
     let multiSelectMode = {};
     let selectedItems = {};
     const adminPassword = 'Mary&Chima0003';
+    let isAuthenticated = false;
+
+    // Authentication functions
+    function checkAuthentication() {
+      const authToken = sessionStorage.getItem('adminAuth');
+      const authTime = sessionStorage.getItem('adminAuthTime');
+      const currentTime = new Date().getTime();
+      
+      // Check if token exists and is less than 4 hours old
+      if (authToken === adminPassword && authTime && (currentTime - parseInt(authTime)) < 4 * 60 * 60 * 1000) {
+        isAuthenticated = true;
+        showDashboard();
+      } else {
+        // Clear expired session
+        sessionStorage.removeItem('adminAuth');
+        sessionStorage.removeItem('adminAuthTime');
+        showLoginModal();
+      }
+    }
+
+    function showLoginModal() {
+      document.getElementById('login-modal').style.display = 'block';
+      document.querySelector('.container').style.display = 'none';
+      
+      // Focus on password field
+      setTimeout(() => {
+        document.getElementById('login-password').focus();
+      }, 100);
+      
+      // Handle Enter key
+      document.getElementById('login-password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          attemptLogin();
+        }
+      });
+    }
+
+    function showDashboard() {
+      document.getElementById('login-modal').style.display = 'none';
+      document.querySelector('.container').style.display = 'block';
+      loadRSVPs(); // Load initial data
+    }
+
+    function attemptLogin() {
+      const password = document.getElementById('login-password').value;
+      const errorDiv = document.getElementById('login-error');
+      
+      if (password === adminPassword) {
+        // Store authentication in session
+        sessionStorage.setItem('adminAuth', adminPassword);
+        sessionStorage.setItem('adminAuthTime', new Date().getTime().toString());
+        isAuthenticated = true;
+        showDashboard();
+      } else {
+        errorDiv.textContent = 'Invalid password. Please try again.';
+        errorDiv.style.display = 'block';
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-password').focus();
+      }
+    }
+
+    // Initialize authentication check on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuthentication();
+    });
+
+    // Authentication helper
+    function requireAuth() {
+      if (!isAuthenticated) {
+        showLoginModal();
+        return false;
+      }
+      return true;
+    }
 
     // Tab Management
     function switchTab(tabName) {
+      if (!requireAuth()) return;
+      
       document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
       });
@@ -595,17 +687,21 @@
     // Logout functionality
     function logout() {
       if (confirm('Are you sure you want to logout?')) {
-        // Clear any stored session data
-        sessionStorage.clear();
+        // Clear authentication data
+        sessionStorage.removeItem('adminAuth');
+        sessionStorage.removeItem('adminAuthTime');
         localStorage.clear();
+        isAuthenticated = false;
         
-        // Redirect to main website
-        window.location.href = 'index.html';
+        // Show login modal again instead of redirecting
+        showLoginModal();
       }
     }
 
     // Export functionality
     function exportData(type) {
+      if (!requireAuth()) return;
+      
       const url = `/.netlify/functions/export-data?type=${type}`;
       const link = document.createElement('a');
       link.href = url;
@@ -617,6 +713,8 @@
 
     // Multi-select and delete functionality
     function toggleMultiSelect(type) {
+      if (!requireAuth()) return;
+      
       multiSelectMode[type] = !multiSelectMode[type];
       selectedItems[type] = [];
       const deleteBtn = document.getElementById(`delete-${type}-btn`);
@@ -624,6 +722,8 @@
     }
 
     async function deleteSelected(type) {
+      if (!requireAuth()) return;
+      
       if (!selectedItems[type] || selectedItems[type].length === 0) {
         alert('Please select items to delete.');
         return;
@@ -652,6 +752,8 @@
 
     // Notification functions
     function sendNotificationModal() {
+      if (!requireAuth()) return;
+      
       document.getElementById('notification-composer').style.display = 'block';
       loadAttendingGuests();
     }
@@ -661,6 +763,8 @@
     }
 
     async function loadAttendingGuests() {
+      if (!requireAuth()) return;
+      
       try {
         const response = await fetch('/.netlify/functions/get-rsvps?attendance=yes', {
           headers: { 'Authorization': `Bearer ${adminPassword}` }
@@ -676,11 +780,284 @@
       }
     }
 
-    // Keep existing loadRSVPs, loadSongs, loadPhotos, loadWishes functions
-    // [Previous functions remain the same - just adding new functionality]
+    // Data Loading Functions with Authentication
+    async function loadRSVPs() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-rsvps', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          // Update stats
+          document.getElementById('total-responses').textContent = result.data.length;
+          document.getElementById('attending').textContent = result.data.filter(r => r.attendance === 'yes').length;
+          document.getElementById('not-attending').textContent = result.data.filter(r => r.attendance === 'no').length;
+          document.getElementById('total-guests').textContent = result.data.reduce((sum, r) => sum + (r.party_size || 1), 0);
+          
+          // Display RSVP list
+          displayRSVPs(result.data);
+        } else {
+          document.getElementById('rsvp-list').innerHTML = '<div class="error">Error loading RSVPs</div>';
+        }
+      } catch (error) {
+        console.error('Error loading RSVPs:', error);
+        document.getElementById('rsvp-list').innerHTML = '<div class="error">Error loading RSVPs</div>';
+      }
+    }
+
+    function displayRSVPs(rsvps) {
+      const container = document.getElementById('rsvp-list');
+      if (rsvps.length === 0) {
+        container.innerHTML = '<div class="loading">No RSVPs found</div>';
+        return;
+      }
+      
+      container.innerHTML = rsvps.map(rsvp => `
+        <div class="rsvp-item">
+          <div class="rsvp-details">
+            <h3>${rsvp.name}</h3>
+            <p><strong>Email:</strong> ${rsvp.email}</p>
+            <p><strong>Phone:</strong> ${rsvp.phone || 'Not provided'}</p>
+            <p><strong>Party Size:</strong> ${rsvp.party_size || 1}</p>
+            <p><strong>Additional Guests:</strong> ${rsvp.guest_names || 'None'}</p>
+            <p><strong>Dietary:</strong> ${rsvp.dietary_needs || 'None'}</p>
+            <p><strong>Submitted:</strong> ${new Date(rsvp.created_at).toLocaleDateString()}</p>
+          </div>
+          <div>
+            <span class="attendance-badge ${rsvp.attendance === 'yes' ? 'attending' : 'not-attending'}">
+              ${rsvp.attendance === 'yes' ? 'Attending' : 'Not Attending'}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadIndividualGuests() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-individual-guests', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          // Update stats
+          document.getElementById('total-individuals').textContent = result.data.length;
+          document.getElementById('primary-guests').textContent = result.data.filter(g => g.is_primary).length;
+          document.getElementById('additional-guests').textContent = result.data.filter(g => !g.is_primary).length;
+          document.getElementById('dietary-requirements').textContent = result.data.filter(g => g.dietary_needs && g.dietary_needs.trim()).length;
+          
+          // Display guests list
+          displayGuests(result.data);
+        } else {
+          document.getElementById('guests-list').innerHTML = '<div class="error">Error loading guests</div>';
+        }
+      } catch (error) {
+        console.error('Error loading guests:', error);
+        document.getElementById('guests-list').innerHTML = '<div class="error">Error loading guests</div>';
+      }
+    }
+
+    function displayGuests(guests) {
+      const container = document.getElementById('guests-list');
+      if (guests.length === 0) {
+        container.innerHTML = '<div class="loading">No individual guests found</div>';
+        return;
+      }
+      
+      container.innerHTML = guests.map(guest => `
+        <div class="rsvp-item">
+          <div class="rsvp-details">
+            <h3>${guest.guest_name} ${guest.is_primary ? '(Primary)' : ''}</h3>
+            <p><strong>Dietary Needs:</strong> ${guest.dietary_needs || 'None'}</p>
+            <p><strong>Table:</strong> ${guest.table_number || 'Unassigned'}</p>
+            <p><strong>RSVP ID:</strong> ${guest.rsvp_id}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadTableData() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-table-data', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          // Update stats and display tables
+          document.getElementById('total-tables-count').textContent = result.statistics.total_tables;
+          document.getElementById('assigned-guests').textContent = result.statistics.assigned_guests;
+          document.getElementById('unassigned-guests').textContent = result.statistics.unassigned_guests;
+          document.getElementById('average-table-size').textContent = result.statistics.avg_table_size;
+          
+          displayTables(result.data);
+        } else {
+          document.getElementById('table-grid').innerHTML = '<div class="error">Error loading table data</div>';
+        }
+      } catch (error) {
+        console.error('Error loading table data:', error);
+        document.getElementById('table-grid').innerHTML = '<div class="error">Error loading table data</div>';
+      }
+    }
+
+    function displayTables(tableData) {
+      const container = document.getElementById('table-grid');
+      if (!tableData.tables || tableData.tables.length === 0) {
+        container.innerHTML = '<div class="loading">No tables assigned yet</div>';
+        return;
+      }
+      
+      container.innerHTML = tableData.tables.map(table => `
+        <div class="table-card ${table.guest_count >= 8 ? 'full' : 'optimal'}">
+          <div class="table-header">
+            <span>Table ${table.table_number}</span>
+            <span>${table.guest_count}/8</span>
+          </div>
+          ${table.guests.map(guest => `
+            <div class="guest-item ${guest.is_primary ? 'guest-primary' : ''}">
+              <span>${guest.guest_name}</span>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    async function loadSongs() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-songs', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          document.getElementById('total-songs').textContent = result.data.length;
+          document.getElementById('popular-genre').textContent = result.statistics?.most_popular_genre || 'N/A';
+          displaySongs(result.data);
+        }
+      } catch (error) {
+        console.error('Error loading songs:', error);
+        document.getElementById('songs-list').innerHTML = '<div class="error">Error loading songs</div>';
+      }
+    }
+
+    function displaySongs(songs) {
+      const container = document.getElementById('songs-list');
+      if (songs.length === 0) {
+        container.innerHTML = '<div class="loading">No song requests yet</div>';
+        return;
+      }
+      
+      container.innerHTML = songs.map(song => `
+        <div class="rsvp-item">
+          <div class="rsvp-details">
+            <h3>${song.song_title}</h3>
+            <p><strong>Artist:</strong> ${song.artist}</p>
+            <p><strong>Genre:</strong> ${song.genre || 'Not specified'}</p>
+            <p><strong>Requested by:</strong> ${song.name} (${song.email})</p>
+            <p><strong>Date:</strong> ${new Date(song.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadPhotos() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-photos', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          document.getElementById('total-photos').textContent = result.data.length;
+          document.getElementById('popular-category').textContent = result.statistics?.category_breakdown?.[0]?.category || 'N/A';
+          displayPhotos(result.data);
+        }
+      } catch (error) {
+        console.error('Error loading photos:', error);
+        document.getElementById('photos-list').innerHTML = '<div class="error">Error loading photos</div>';
+      }
+    }
+
+    function displayPhotos(photos) {
+      const container = document.getElementById('photos-list');
+      if (photos.length === 0) {
+        container.innerHTML = '<div class="loading">No photos shared yet</div>';
+        return;
+      }
+      
+      container.innerHTML = photos.map(photo => `
+        <div class="rsvp-item">
+          <div class="rsvp-details">
+            <h3>${photo.name}</h3>
+            <p><strong>Email:</strong> ${photo.email}</p>
+            <p><strong>Category:</strong> ${photo.category}</p>
+            <p><strong>Description:</strong> ${photo.description || 'No description'}</p>
+            <p><strong>URL:</strong> <a href="${photo.photo_url}" target="_blank">View Photo</a></p>
+            <p><strong>Date:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadWishes() {
+      if (!requireAuth()) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-wishes', {
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          document.getElementById('total-wishes').textContent = result.data.length;
+          document.getElementById('popular-message-type').textContent = result.statistics?.most_popular_type || 'N/A';
+          displayWishes(result.data);
+        }
+      } catch (error) {
+        console.error('Error loading wishes:', error);
+        document.getElementById('wishes-list').innerHTML = '<div class="error">Error loading wishes</div>';
+      }
+    }
+
+    function displayWishes(wishes) {
+      const container = document.getElementById('wishes-list');
+      if (wishes.length === 0) {
+        container.innerHTML = '<div class="loading">No wishes submitted yet</div>';
+        return;
+      }
+      
+      container.innerHTML = wishes.map(wish => `
+        <div class="rsvp-item">
+          <div class="rsvp-details">
+            <h3>${wish.name}</h3>
+            <p><strong>Email:</strong> ${wish.email}</p>
+            <p><strong>Type:</strong> ${wish.message_type}</p>
+            <p><strong>Message:</strong> ${wish.message}</p>
+            <p><strong>Date:</strong> ${new Date(wish.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadNotifications() {
+      if (!requireAuth()) return;
+      
+      // Placeholder for notifications - would need a notifications table/function
+      document.getElementById('notifications-list').innerHTML = '<div class="loading">Notification history feature coming soon</div>';
+    }
     
-    // Load initial data
-    loadRSVPs();
+    // Note: Initial data loading is now handled by showDashboard() after authentication
   </script>
 </body>
 </html>
