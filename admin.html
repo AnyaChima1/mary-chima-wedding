@@ -248,9 +248,42 @@
       padding: 20px;
       border-bottom: 1px solid #f0f0f0;
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: auto 1fr auto;
       gap: 20px;
       align-items: center;
+      transition: all 0.3s ease;
+    }
+    
+    .rsvp-item.selected-item {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      transform: translateX(4px);
+    }
+    
+    .rsvp-item:not(.selected-item) {
+      grid-template-columns: 1fr auto;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      margin-right: 10px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+      accent-color: #2196f3;
+    }
+    
+    .checkbox-item label {
+      margin-left: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #2196f3;
+      font-size: 12px;
     }
     .rsvp-item:last-child {
       border-bottom: none;
@@ -355,8 +388,8 @@
         <button class="btn btn-secondary" onclick="filterRSVPs('')">Show All</button>
         <button class="btn btn-success" onclick="exportData('rsvps')">📊 Export RSVPs</button>
         <button class="btn btn-info" onclick="sendNotificationModal()">📧 Send Notification</button>
-        <button class="btn btn-warning" onclick="toggleMultiSelect('rsvp')">✓ Multi-Select</button>
-        <button class="btn btn-danger" onclick="deleteSelected('rsvps')" style="display:none" id="delete-rsvp-btn">🗑️ Delete Selected</button>
+        <button class="btn btn-warning" onclick="toggleMultiSelect('rsvps')">✓ Multi-Select</button>
+        <button class="btn btn-danger" onclick="deleteSelected('rsvps')" style="display:none" id="delete-rsvps-btn">🗑️ Delete Selected</button>
       </div>
 
       <div id="rsvp-error-container"></div>
@@ -477,11 +510,11 @@
           </div>
           <div class="form-group">
             <label>Subject:</label>
-            <input type="text" id="notification-subject" placeholder="Wedding Update" required>
+            <input type="text" name="subject" id="notification-subject" placeholder="Wedding Update" required>
           </div>
           <div class="form-group">
             <label>Message:</label>
-            <textarea id="notification-message" rows="5" placeholder="Your message to guests..." required></textarea>
+            <textarea name="message" id="notification-message" rows="5" placeholder="Your message to guests..." required></textarea>
           </div>
           <div class="form-group">
             <button type="submit" class="btn btn-primary">Send Notification</button>
@@ -731,7 +764,16 @@
       multiSelectMode[type] = !multiSelectMode[type];
       selectedItems[type] = [];
       const deleteBtn = document.getElementById(`delete-${type}-btn`);
-      deleteBtn.style.display = multiSelectMode[type] ? 'inline-block' : 'none';
+      if (deleteBtn) {
+        deleteBtn.style.display = multiSelectMode[type] ? 'inline-block' : 'none';
+        deleteBtn.textContent = `🗑️ Delete Selected (0)`;
+      }
+      
+      // Reload the current data to show/hide checkboxes
+      if (type === 'rsvps') {
+        const currentData = JSON.parse(sessionStorage.getItem('currentRSVPs') || '[]');
+        displayRSVPs(currentData);
+      }
     }
 
     async function deleteSelected(type) {
@@ -919,6 +961,9 @@
         container.innerHTML = '<div class="loading">No RSVPs found</div>';
         return;
       }
+      
+      // Store current RSVP data for multi-select toggling
+      sessionStorage.setItem('currentRSVPs', JSON.stringify(rsvps));
       
       container.innerHTML = rsvps.map(rsvp => `
         <div class="rsvp-item" data-id="${rsvp.id}">
@@ -1208,9 +1253,10 @@
       }
       
       const notificationData = {
-        recipients: selectedRecipients,
+        recipient_ids: selectedRecipients.map(id => parseInt(id)),
         subject: formData.get('subject'),
-        message: formData.get('message')
+        message: formData.get('message'),
+        notification_type: 'admin_message'
       };
       
       try {
@@ -1236,6 +1282,11 @@
         console.error('Notification error:', error);
         alert('Error sending notification. Please try again.');
       }
+    }
+    
+    // Bulk notification function (same as sendNotificationModal for now)
+    function sendBulkNotification() {
+      sendNotificationModal();
     }
     
     // Setup notification form submission

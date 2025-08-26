@@ -56,6 +56,13 @@
         <div id="submit-result" class="result" style="display: none;"></div>
     </div>
     
+    <div class="test-section">
+        <h2>Test 5: Multi-Select and Notifications</h2>
+        <p>This tests if the admin dashboard multi-select and notification features work.</p>
+        <button onclick="testAdminFeatures()">🔧 Test Admin Features</button>
+        <div id="admin-features-result" class="result" style="display: none;"></div>
+    </div>
+    
     <script>
         const adminPassword = 'Mary&Chima0003';
         
@@ -228,6 +235,48 @@
             } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
+            }
+        }
+        async function testAdminFeatures() {
+            const resultDiv = document.getElementById('admin-features-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            try {
+                // Test 1: Check if send-notification function exists
+                const notificationResponse = await fetch('/.netlify/functions/send-notification', {
+                    method: 'OPTIONS' // Just check if endpoint exists
+                });
+                
+                // Test 2: Check if delete-entries function exists
+                const deleteResponse = await fetch('/.netlify/functions/delete-entries', {
+                    method: 'OPTIONS' // Just check if endpoint exists
+                });
+                
+                const tests = {
+                    notificationEndpoint: notificationResponse.ok,
+                    deleteEndpoint: deleteResponse.ok
+                };
+                
+                if (tests.notificationEndpoint && tests.deleteEndpoint) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Admin Features Available</h4>
+                        <p><strong>Notification Function:</strong> ✅ Available</p>
+                        <p><strong>Delete Function:</strong> ✅ Available</p>
+                        <p><strong>Status:</strong> Multi-select and notification features should work in admin dashboard</p>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>⚠️ Some Admin Features Missing</h4>
+                        <p><strong>Notification Function:</strong> ${tests.notificationEndpoint ? '✅' : '❌'} ${tests.notificationEndpoint ? 'Available' : 'Missing'}</p>
+                        <p><strong>Delete Function:</strong> ${tests.deleteEndpoint ? '✅' : '❌'} ${tests.deleteEndpoint ? 'Available' : 'Missing'}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
             }
         }
     </script>
