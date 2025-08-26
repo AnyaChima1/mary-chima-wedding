@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RSVP Admin Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; color: #2e7d2e; }
+        .error { background: #ffebee; border: 1px solid #f44336; color: #c62828; }
+        button { padding: 8px 16px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 RSVP Admin Dashboard Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Debug Connection</h2>
+        <p>This tests if the database and authentication are working correctly.</p>
+        <button onclick="testDebugConnection()">🔍 Test Debug Connection</button>
+        <div id="debug-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Run Migration</h2>
+        <p>This ensures the database schema is correct for RSVPs.</p>
+        <button onclick="testMigration()">🔧 Run Database Migration</button>
+        <div id="migration-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Load RSVPs</h2>
+        <p>This tests if RSVPs can be loaded successfully.</p>
+        <button onclick="testLoadRSVPs()">📋 Load RSVPs</button>
+        <div id="rsvp-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Submit Test RSVP</h2>
+        <p>This creates a test RSVP to ensure the submission works.</p>
+        <button onclick="testSubmitRSVP()">✉️ Submit Test RSVP</button>
+        <div id="submit-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <script>
+        const adminPassword = 'Mary&Chima0003';
+        
+        async function testDebugConnection() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '🔍 Testing...';
+            btn.disabled = true;
+            
+            const resultDiv = document.getElementById('debug-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/.netlify/functions/debug-rsvp', {
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Debug Connection Successful</h4>
+                        <p><strong>Database:</strong> ${result.database.connected ? '✅ Connected' : '❌ Not connected'}</p>
+                        <p><strong>RSVP Table:</strong> ${result.database.tableExists ? '✅ Exists' : '❌ Missing'}</p>
+                        <p><strong>Record Count:</strong> ${result.database.recordCount || 0}</p>
+                        <p><strong>Authentication:</strong> ${result.authentication.valid ? '✅ Valid' : '❌ Invalid'}</p>
+                        <details><summary>Full Details</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h4>❌ Debug Test Failed</h4><p>Status: ${response.status}</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        async function testMigration() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '🔧 Migrating...';
+            btn.disabled = true;
+            
+            const resultDiv = document.getElementById('migration-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/.netlify/functions/migrate-rsvp-schema', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Migration Successful</h4>
+                        <p><strong>Schema Test:</strong> ${result.schemaTest.success ? '✅ Passed' : '❌ Failed'}</p>
+                        <p><strong>Migrations Run:</strong> ${result.migrations.length}</p>
+                        <ul>
+                            ${result.migrations.map(m => `<li>${m.description}: ${m.status === 'success' ? '✅' : '❌'} ${m.status}</li>`).join('')}
+                        </ul>
+                        <details><summary>Full Details</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h4>❌ Migration Failed</h4><p>Status: ${response.status}</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        async function testLoadRSVPs() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '📋 Loading...';
+            btn.disabled = true;
+            
+            const resultDiv = document.getElementById('rsvp-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/.netlify/functions/get-rsvps', {
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ RSVPs Loaded Successfully</h4>
+                        <p><strong>Total RSVPs:</strong> ${result.data.length}</p>
+                        <p><strong>Total Responses:</strong> ${result.statistics?.total_responses || 0}</p>
+                        <p><strong>Attending:</strong> ${result.statistics?.attending || 0}</p>
+                        <p><strong>Not Attending:</strong> ${result.statistics?.not_attending || 0}</p>
+                        <p><strong>Total Guests:</strong> ${result.statistics?.total_guests || 0}</p>
+                        <details><summary>Sample Data</summary><pre>${JSON.stringify(result.data.slice(0, 2), null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h4>❌ RSVP Loading Failed</h4><p>Status: ${response.status}</p><p>Error: ${result.error}</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        async function testSubmitRSVP() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✉️ Submitting...';
+            btn.disabled = true;
+            
+            const resultDiv = document.getElementById('submit-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const testData = {
+                    name: 'Test User',
+                    email: `test-${Date.now()}@example.com`,
+                    attendance: 'yes',
+                    guest_count: 2,
+                    guest_names: 'Guest One, Guest Two',
+                    dietary: 'No dietary restrictions',
+                    phone: '+1-555-0123'
+                };
+                
+                const response = await fetch('/.netlify/functions/submit-rsvp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Test RSVP Submitted Successfully</h4>
+                        <p><strong>Name:</strong> ${testData.name}</p>
+                        <p><strong>Email:</strong> ${testData.email}</p>
+                        <p><strong>Status:</strong> ${result.updated ? 'Updated' : 'Created'}</p>
+                        <p>The admin dashboard should now show this RSVP!</p>
+                        <details><summary>Response</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h4>❌ RSVP Submit Failed</h4><p>Status: ${response.status}</p><p>Error: ${result.error}</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

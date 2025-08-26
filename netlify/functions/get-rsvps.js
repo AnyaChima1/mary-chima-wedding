@@ -27,21 +27,46 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Basic authentication check (optional - you can add a simple password)
+    // Enhanced authentication check with debugging
     const authHeader = event.headers.authorization;
     const expectedAuth = process.env.ADMIN_PASSWORD; // Set this in Netlify env vars
     
+    console.log('GET-RSVPS AUTH CHECK:', {
+      hasAuthHeader: !!authHeader,
+      hasExpectedAuth: !!expectedAuth,
+      authHeaderLength: authHeader ? authHeader.length : 0,
+      expectedAuthLength: expectedAuth ? expectedAuth.length : 0
+    });
+    
     if (expectedAuth && (!authHeader || authHeader !== `Bearer ${expectedAuth}`)) {
+      console.log('AUTH FAILURE:', {
+        expectedPrefix: 'Bearer ',
+        receivedAuth: authHeader ? authHeader.substring(0, 20) + '...' : 'none',
+        expectedAuth: expectedAuth ? 'Bearer ' + expectedAuth.substring(0, 10) + '...' : 'none'
+      });
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ 
+          error: 'Unauthorized',
+          debug: process.env.NODE_ENV === 'development' ? {
+            hasAuthHeader: !!authHeader,
+            hasExpectedAuth: !!expectedAuth
+          } : undefined
+        }),
       };
     }
 
-    // Initialize Neon connection
+    // Initialize Neon connection with debugging
     const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+    console.log('DATABASE CONNECTION:', {
+      hasNetlifyUrl: !!process.env.NETLIFY_DATABASE_URL,
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      finalUrlLength: databaseUrl ? databaseUrl.length : 0
+    });
+    
     if (!databaseUrl) {
+      console.error('NO DATABASE URL FOUND');
       return {
         statusCode: 500,
         headers,
@@ -86,7 +111,18 @@ exports.handler = async (event, context) => {
       countQuery = sql`SELECT COUNT(*) as total FROM rsvps`;
     }
 
+    console.log('EXECUTING QUERIES:', {
+      hasQuery: !!query,
+      hasCountQuery: !!countQuery,
+      attendance: attendance || 'all'
+    });
+    
     const [rsvps, countResult] = await Promise.all([query, countQuery]);
+    
+    console.log('QUERY RESULTS:', {
+      rsvpCount: rsvps.length,
+      totalCount: countResult[0]?.total
+    });
 
     // Get summary statistics
     const stats = await sql`
@@ -97,6 +133,8 @@ exports.handler = async (event, context) => {
         SUM(guest_count) FILTER (WHERE attendance = 'yes') as total_guests
       FROM rsvps
     `;
+    
+    console.log('STATISTICS:', stats[0]);
 
     return {
       statusCode: 200,
@@ -115,14 +153,33 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('GET-RSVPS ERROR:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      name: error.name,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Determine error type for better user feedback
+    let errorMessage = 'Internal server error. Please try again later.';
+    if (error.message?.includes('relation "rsvps" does not exist')) {
+      errorMessage = 'Database table not found. Please run database migration first.';
+    } else if (error.message?.includes('connect')) {
+      errorMessage = 'Database connection failed. Please check configuration.';
+    }
     
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Internal server error. Please try again later.',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          code: error.code,
+          type: error.constructor.name
+        } : undefined
       }),
     };
   }

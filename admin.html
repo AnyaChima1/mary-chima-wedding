@@ -803,10 +803,16 @@
           url += `?attendance=${filter}`;
         }
         
+        console.log('Loading RSVPs from:', url);
+        console.log('Using admin password:', adminPassword.substring(0, 10) + '...');
+        
         const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${adminPassword}` }
         });
+        
+        console.log('Response status:', response.status);
         const result = await response.json();
+        console.log('Response data:', result);
         
         if (result.success) {
           // Update stats using the statistics from the response
@@ -818,11 +824,70 @@
           // Display RSVP list
           displayRSVPs(result.data);
         } else {
-          document.getElementById('rsvp-list').innerHTML = '<div class="error">Error loading RSVPs</div>';
+          const errorMsg = result.error || 'Unknown error loading RSVPs';
+          console.error('RSVP Loading Error:', result);
+          document.getElementById('rsvp-list').innerHTML = `
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Loading RSVPs</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="runMigration()" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">🔧 Run Database Migration</button>
+                <button onclick="loadRSVPs()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
+            </div>
+          `;
         }
       } catch (error) {
         console.error('Error loading RSVPs:', error);
-        document.getElementById('rsvp-list').innerHTML = '<div class="error">Error loading RSVPs</div>';
+        document.getElementById('rsvp-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadRSVPs()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Database migration function
+    async function runMigration() {
+      if (!requireAuth()) return;
+      
+      if (!confirm('Run database migration? This will update the database schema to fix any issues.')) {
+        return;
+      }
+      
+      const migrationBtn = event.target;
+      const originalText = migrationBtn.textContent;
+      migrationBtn.textContent = '🔧 Running Migration...';
+      migrationBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/.netlify/functions/migrate-rsvp-schema', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminPassword}` }
+        });
+        
+        const result = await response.json();
+        console.log('Migration result:', result);
+        
+        if (result.success) {
+          alert('✅ Database migration completed successfully!');
+          // Reload RSVPs after successful migration
+          loadRSVPs();
+        } else {
+          alert('❌ Migration failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Migration error:', error);
+        alert('❌ Migration failed: ' + error.message);
+      } finally {
+        migrationBtn.textContent = originalText;
+        migrationBtn.disabled = false;
       }
     }
 

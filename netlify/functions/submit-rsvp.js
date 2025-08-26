@@ -83,12 +83,21 @@ exports.handler = async (event, context) => {
         guest_count INTEGER DEFAULT 1,
         guest_names TEXT,
         dietary_requirements TEXT,
+        phone VARCHAR(20),
         table_number INTEGER,
         notification_sent BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `;
+    
+    // Add phone column if it doesn't exist (for existing tables)
+    try {
+      await sql`ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`;
+    } catch (error) {
+      // Column might already exist, ignore error
+      console.log('Phone column might already exist:', error.message);
+    }
 
     // Create individual guests table
     await sql`
@@ -121,6 +130,7 @@ exports.handler = async (event, context) => {
           guest_count = ${data.guest_count || 1},
           guest_names = ${data.guest_names || ''},
           dietary_requirements = ${data.dietary || ''},
+          phone = ${data.phone || ''},
           updated_at = ${currentTime}
         WHERE email = ${email}
         RETURNING id, name, email, attendance
@@ -153,7 +163,8 @@ exports.handler = async (event, context) => {
           attendance, 
           guest_count, 
           guest_names, 
-          dietary_requirements, 
+          dietary_requirements,
+          phone,
           created_at,
           updated_at
         ) VALUES (
@@ -163,6 +174,7 @@ exports.handler = async (event, context) => {
           ${data.guest_count || 1},
           ${data.guest_names || ''},
           ${data.dietary || ''},
+          ${data.phone || ''},
           ${currentTime},
           ${currentTime}
         )
