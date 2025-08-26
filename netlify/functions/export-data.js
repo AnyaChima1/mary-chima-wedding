@@ -58,7 +58,70 @@ exports.handler = async (event, context) => {
 
     let csvData = '';
     
-    if (type === 'all' || type === 'rsvps') {
+    if (type === 'guests') {
+      // Export individual guests data only
+      const guests = await sql`
+        SELECT 
+          ig.id, ig.rsvp_id, ig.guest_name, ig.dietary_needs, 
+          ig.table_number, ig.is_primary, ig.created_at,
+          r.name as rsvp_name, r.email as rsvp_email, r.attendance, r.phone
+        FROM individual_guests ig
+        LEFT JOIN rsvps r ON ig.rsvp_id = r.id
+        ORDER BY ig.guest_name ASC
+      `;
+      
+      csvData += 'Individual Guests Data\n';
+      csvData += 'Guest ID,Guest Name,Guest Type,RSVP Contact Name,RSVP Email,Phone,Attendance Status,Dietary Requirements,Table Assignment,RSVP ID,Date Added\n';
+      
+      guests.forEach(guest => {
+        const row = [
+          guest.id,
+          `"${guest.guest_name}"`,
+          guest.is_primary ? 'Primary Guest' : 'Additional Guest',
+          `"${guest.rsvp_name || 'Unknown'}"`,
+          guest.rsvp_email || '',
+          guest.phone || '',
+          guest.attendance === 'yes' ? 'Attending' : 'Not Attending',
+          `"${guest.dietary_needs || 'None specified'}"`,
+          guest.table_number ? `Table ${guest.table_number}` : 'Unassigned',
+          guest.rsvp_id,
+          new Date(guest.created_at).toLocaleDateString()
+        ].join(',');
+        csvData += row + '\n';
+      });
+    } else if (type === 'tables') {
+      // Export table assignments
+      const tableData = await sql`
+        SELECT 
+          ig.table_number,
+          ig.guest_name,
+          ig.is_primary,
+          ig.dietary_needs,
+          r.name as rsvp_name,
+          r.email as rsvp_email,
+          r.phone
+        FROM individual_guests ig
+        LEFT JOIN rsvps r ON ig.rsvp_id = r.id
+        WHERE ig.table_number IS NOT NULL
+        ORDER BY ig.table_number, ig.is_primary DESC, ig.guest_name
+      `;
+      
+      csvData += 'Table Seating Plan\n';
+      csvData += 'Table Number,Guest Name,Guest Type,Dietary Requirements,RSVP Contact,Email,Phone\n';
+      
+      tableData.forEach(guest => {
+        const row = [
+          guest.table_number,
+          `"${guest.guest_name}"`,
+          guest.is_primary ? 'Primary' : 'Additional',
+          `"${guest.dietary_needs || 'None'}"`,
+          `"${guest.rsvp_name}"`,
+          guest.rsvp_email || '',
+          guest.phone || ''
+        ].join(',');
+        csvData += row + '\n';
+      });
+    } else if (type === 'all' || type === 'rsvps') {
       // Get RSVPs with individual guest breakdown
       const rsvps = await sql`
         SELECT 
@@ -91,9 +154,7 @@ exports.handler = async (event, context) => {
         csvData += row + '\n';
       });
       csvData += '\n';
-    }
-
-    if (type === 'all' || type === 'songs') {
+    } else if (type === 'all' || type === 'songs') {
       const songs = await sql`SELECT * FROM song_requests ORDER BY created_at DESC`;
       
       csvData += 'Song Requests\n';
@@ -113,9 +174,7 @@ exports.handler = async (event, context) => {
         csvData += row + '\n';
       });
       csvData += '\n';
-    }
-
-    if (type === 'all' || type === 'photos') {
+    } else if (type === 'all' || type === 'photos') {
       const photos = await sql`SELECT * FROM photo_shares ORDER BY created_at DESC`;
       
       csvData += 'Photo Shares\n';
@@ -134,9 +193,7 @@ exports.handler = async (event, context) => {
         csvData += row + '\n';
       });
       csvData += '\n';
-    }
-
-    if (type === 'all' || type === 'wishes') {
+    } else if (type === 'all' || type === 'wishes') {
       const wishes = await sql`SELECT * FROM wishes ORDER BY created_at DESC`;
       
       csvData += 'Wishes\n';
@@ -154,6 +211,9 @@ exports.handler = async (event, context) => {
         ].join(',');
         csvData += row + '\n';
       });
+    } else {
+      // Fallback for unrecognized types
+      csvData = `Error: Unknown export type '${type}'. Supported types: guests, tables, rsvps, songs, photos, wishes, all`;
     }
 
     return {

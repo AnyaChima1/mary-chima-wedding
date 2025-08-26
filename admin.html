@@ -784,10 +784,34 @@
     function exportData(type) {
       if (!requireAuth()) return;
       
+      let filename;
+      switch(type) {
+        case 'guests':
+          filename = `wedding_individual_guests_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'tables':
+          filename = `wedding_seating_plan_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'rsvps':
+          filename = `wedding_rsvps_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'songs':
+          filename = `wedding_songs_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'photos':
+          filename = `wedding_photos_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case 'wishes':
+          filename = `wedding_wishes_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        default:
+          filename = `wedding_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+      }
+      
       const url = `/.netlify/functions/export-data?type=${type}&authorization=${encodeURIComponent('Bearer ' + adminPassword)}`;
       const link = document.createElement('a');
       link.href = url;
-      link.download = `wedding_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = filename;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
