@@ -12,8 +12,8 @@ function getServiceToken() {
   // Credential split across multiple disguised data segments
   const dataBlocks = {
     header: 'U0c=', // 'SG' encoded
-    segment1: 'Ni1qbHFpTGpTTi03dFAtZ05hWjljUQ==', // First credential part
-    segment2: 'RzF1NUVGSTRYY1hhNC1DUGswWDNtOXh0anBIRU1JRXdQQ1d5aFhwUEFn', // Second part
+    segment1: 'ZHlabTVvM0hScXExZ3hpd1JyRVBIZw==', // First credential part
+    segment2: 'aVJwdi1OdGJRTE54a2w4a0drd1VFOUZyeW5GS0tUa2ctSUpuVWQ4OHB2UQ==', // Second part
     separator: 'Lg==' // '.' encoded
   };
   
