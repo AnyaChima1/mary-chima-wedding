@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Notification Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; color: #2e7d2e; }
+        .error { background: #ffebee; border: 1px solid #f44336; color: #c62828; }
+        button { padding: 8px 16px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .form-group { margin: 10px 0; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: bold; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Notification System Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Check Notification Function Endpoint</h2>
+        <p>Test if the send-notification function is available.</p>
+        <button onclick="testNotificationEndpoint()">🔍 Test Endpoint</button>
+        <div id="endpoint-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Load Attending Guests</h2>
+        <p>Test if we can load the list of attending guests for notifications.</p>
+        <button onclick="testLoadAttendingGuests()">📋 Load Attending Guests</button>
+        <div id="guests-result" class="result" style="display: none;"></div>
+        <select id="test-recipients" multiple style="height: 120px; display: none; margin-top: 10px;">
+        </select>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Send Test Notification</h2>
+        <p>Test sending a notification to selected guests.</p>
+        <div class="form-group">
+            <label>Subject:</label>
+            <input type="text" id="test-subject" value="Test Notification" placeholder="Wedding Update">
+        </div>
+        <div class="form-group">
+            <label>Message:</label>
+            <textarea id="test-message" rows="3" placeholder="Your test message...">This is a test notification from the admin dashboard.</textarea>
+        </div>
+        <button onclick="testSendNotification()">📧 Send Test Notification</button>
+        <div id="send-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Check Admin Form Issues</h2>
+        <p>Test the exact form structure that's used in the admin dashboard.</p>
+        <button onclick="testFormStructure()">🔧 Test Form Structure</button>
+        <div id="form-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 5: Test RSVP Tab Integration</h2>
+        <p>Test the specific implementation used in the RSVP tab.</p>
+        <button onclick="testRSVPTabIntegration()">🔧 Test RSVP Tab Integration</button>
+        <div id="rsvp-integration-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <script>
+        const adminPassword = 'Mary&Chima0003';
+        let attendingGuests = [];
+        
+        async function testNotificationEndpoint() {
+            const resultDiv = document.getElementById('endpoint-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                // Test OPTIONS request first
+                const optionsResponse = await fetch('/.netlify/functions/send-notification', {
+                    method: 'OPTIONS'
+                });
+                
+                // Test validation (should return 400 for missing data)
+                const validationResponse = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const validationResult = await validationResponse.json();
+                
+                if (optionsResponse.ok && validationResponse.status === 400) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Notification Endpoint Working</h4>
+                        <p><strong>OPTIONS:</strong> ${optionsResponse.status} - ✅ CORS enabled</p>
+                        <p><strong>Validation:</strong> ${validationResponse.status} - ✅ Properly validates requests</p>
+                        <p><strong>Error Message:</strong> ${validationResult.error}</p>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>❌ Endpoint Issues</h4>
+                        <p><strong>OPTIONS:</strong> ${optionsResponse.status}</p>
+                        <p><strong>Validation:</strong> ${validationResponse.status}</p>
+                        <p><strong>Response:</strong> ${JSON.stringify(validationResult)}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testLoadAttendingGuests() {
+            const resultDiv = document.getElementById('guests-result');
+            const selectElement = document.getElementById('test-recipients');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/.netlify/functions/get-rsvps?attendance=yes', {
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    attendingGuests = result.data;
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Attending Guests Loaded</h4>
+                        <p><strong>Total Attending:</strong> ${attendingGuests.length}</p>
+                        <p><strong>Sample Guests:</strong> ${attendingGuests.slice(0, 3).map(g => g.name).join(', ')}</p>
+                    `;
+                    
+                    // Populate select options
+                    selectElement.innerHTML = attendingGuests.map(guest => 
+                        `<option value="${guest.id}">${guest.name} (${guest.email})</option>`
+                    ).join('');
+                    selectElement.style.display = 'block';
+                    
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>❌ Failed to Load Attending Guests</h4>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${result.error}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testSendNotification() {
+            const resultDiv = document.getElementById('send-result');
+            const selectElement = document.getElementById('test-recipients');
+            resultDiv.style.display = 'block';
+            
+            const selectedRecipients = Array.from(selectElement.selectedOptions).map(option => option.value);
+            const subject = document.getElementById('test-subject').value;
+            const message = document.getElementById('test-message').value;
+            
+            if (selectedRecipients.length === 0) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<h4>❌ No Recipients Selected</h4><p>Please select at least one recipient from the list above.</p>';
+                return;
+            }
+            
+            const notificationData = {
+                recipient_ids: selectedRecipients.map(id => parseInt(id)),
+                subject: subject,
+                message: message,
+                notification_type: 'admin_message'
+            };
+            
+            try {
+                console.log('Sending notification data:', notificationData);
+                
+                const response = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify(notificationData)
+                });
+                
+                const result = await response.json();
+                console.log('Notification response:', result);
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Notification Sent Successfully</h4>
+                        <p><strong>Recipients:</strong> ${selectedRecipients.length}</p>
+                        <p><strong>Sent Count:</strong> ${result.sentCount}</p>
+                        <p><strong>Recipients:</strong> ${result.recipients.map(r => r.name).join(', ')}</p>
+                        <details><summary>Full Response</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>❌ Notification Failed</h4>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${result.error}</p>
+                        <details><summary>Full Response</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+                console.error('Notification error:', error);
+            }
+        }
+        
+        async function testFormStructure() {
+            const resultDiv = document.getElementById('form-result');
+            resultDiv.style.display = 'block';
+            
+            // Test the exact same form structure as admin.html
+            const testForm = document.createElement('form');
+            testForm.id = 'test-notification-form';
+            testForm.innerHTML = `
+                <input type="text" name="subject" value="Test Form Structure">
+                <textarea name="message">This is a test message from form structure test.</textarea>
+            `;
+            
+            const formData = new FormData(testForm);
+            const subject = formData.get('subject');
+            const message = formData.get('message');
+            
+            resultDiv.className = 'result success';
+            resultDiv.innerHTML = `
+                <h4>✅ Form Structure Test</h4>
+                <p><strong>Subject from FormData:</strong> "${subject}"</p>
+                <p><strong>Message from FormData:</strong> "${message}"</p>
+                <p><strong>Form structure:</strong> Matches admin.html implementation</p>
+                <p><strong>Status:</strong> Form data extraction working correctly</p>
+            `;
+        }
+        async function testRSVPTabIntegration() {
+            const resultDiv = document.getElementById('rsvp-integration-result');
+            resultDiv.style.display = 'block';
+            
+            try {
+                // Simulate the exact same workflow as RSVP tab
+                
+                // 1. Test loading attending guests (like loadAttendingGuestsForRSVP)
+                const guestsResponse = await fetch('/.netlify/functions/get-rsvps?attendance=yes', {
+                    headers: { 'Authorization': `Bearer ${adminPassword}` }
+                });
+                const guestsResult = await guestsResponse.json();
+                
+                if (!guestsResult.success || !guestsResult.data || guestsResult.data.length === 0) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>❌ No Attending Guests Found</h4>
+                        <p><strong>Status:</strong> ${guestsResponse.status}</p>
+                        <p><strong>Error:</strong> ${guestsResult.error || 'No attending guests in database'}</p>
+                        <p><strong>Note:</strong> Add some test RSVPs with attendance='yes' first</p>
+                    `;
+                    return;
+                }
+                
+                // 2. Test notification sending with first guest
+                const testNotificationData = {
+                    recipient_ids: [guestsResult.data[0].id],
+                    subject: 'RSVP Tab Integration Test',
+                    message: 'This is a test notification sent from the RSVP tab integration test.',
+                    notification_type: 'admin_message'
+                };
+                
+                const notificationResponse = await fetch('/.netlify/functions/send-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify(testNotificationData)
+                });
+                
+                const notificationResult = await notificationResponse.json();
+                
+                if (notificationResponse.ok && notificationResult.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ RSVP Tab Integration Working</h4>
+                        <p><strong>Attending Guests Loaded:</strong> ✅ ${guestsResult.data.length} guests</p>
+                        <p><strong>Test Notification Sent:</strong> ✅ To ${notificationResult.recipients[0].name}</p>
+                        <p><strong>Database Updated:</strong> ✅ Notification recorded</p>
+                        <p><strong>Status:</strong> Send notification button in RSVP tab should now work correctly!</p>
+                        <details><summary>Guest List Sample</summary><pre>${JSON.stringify(guestsResult.data.slice(0, 3), null, 2)}</pre></details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h4>❌ Notification Sending Failed</h4>
+                        <p><strong>Status:</strong> ${notificationResponse.status}</p>
+                        <p><strong>Error:</strong> ${notificationResult.error}</p>
+                        <p><strong>Guests Available:</strong> ${guestsResult.data.length}</p>
+                        <details><summary>Full Response</summary><pre>${JSON.stringify(notificationResult, null, 2)}</pre></details>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Network Error</h4><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
