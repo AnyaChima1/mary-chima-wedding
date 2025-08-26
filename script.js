@@ -756,26 +756,41 @@ function switchPhotoTab(tab) {
 function selectUploadMethod(method) {
   currentUploadMethod = method;
   
+  console.log('Switching upload method to:', method);
+  
   // Update method option styling
   document.querySelectorAll('.method-option').forEach(option => option.classList.remove('active'));
-  event.target.closest('.method-option').classList.add('active');
+  
+  // Find the correct option and activate it
+  const methodOptions = document.querySelectorAll('.method-option');
+  if (method === 'url') {
+    methodOptions[0]?.classList.add('active');
+  } else if (method === 'file') {
+    methodOptions[1]?.classList.add('active');
+  }
   
   // Show/hide upload sections
   document.querySelectorAll('.upload-section').forEach(section => section.classList.remove('active'));
-  document.getElementById(method + '-upload').classList.add('active');
+  const targetSection = document.getElementById(method + '-upload');
+  if (targetSection) {
+    targetSection.classList.add('active');
+  }
   
   // Update form validation
   const urlInput = document.getElementById('photo-url');
   const fileInput = document.getElementById('photo-files');
   
   if (method === 'url') {
-    urlInput.required = true;
-    fileInput.required = false;
+    if (urlInput) {
+      urlInput.required = true;
+      urlInput.focus();
+    }
+    if (fileInput) fileInput.required = false;
     selectedFiles = [];
     updateFilePreview();
   } else {
-    urlInput.required = false;
-    fileInput.required = true;
+    if (urlInput) urlInput.required = false;
+    if (fileInput) fileInput.required = true;
   }
 }
 
@@ -863,11 +878,33 @@ function closePhotoModal() {
   document.body.style.overflow = '';
   
   setTimeout(() => {
+    // Reset form properly
     photoForm.reset();
     photoForm.style.display = 'flex';
     photoSuccess.style.display = 'none';
+    
+    // Reset upload method to URL
+    currentUploadMethod = 'url';
+    document.querySelectorAll('.method-option').forEach(option => option.classList.remove('active'));
+    document.querySelector('.method-option:first-child').classList.add('active');
+    
+    // Reset upload sections
+    document.querySelectorAll('.upload-section').forEach(section => section.classList.remove('active'));
+    document.getElementById('url-upload').classList.add('active');
+    
+    // Clear files and preview
     selectedFiles = [];
     updateFilePreview();
+    
+    // Reset form validation
+    const urlInput = document.getElementById('photo-url');
+    const fileInput = document.getElementById('photo-files');
+    if (urlInput && fileInput) {
+      urlInput.required = true;
+      fileInput.required = false;
+      urlInput.value = '';
+      fileInput.value = '';
+    }
   }, 300);
 }
 
@@ -1131,7 +1168,43 @@ photoForm?.addEventListener('submit', async (e) => {
     
   } catch (error) {
     console.error('Photo submission error:', error);
-    alert(`Sorry, there was an error: ${error.message}. Please try again.`);
+    
+    // Show user-friendly error message
+    let errorMessage = 'Sorry, there was an error: ' + error.message;
+    
+    // Specific error handling
+    if (error.message.includes('Database connection')) {
+      errorMessage = 'Unable to connect to the database. Please try again in a few moments.';
+    } else if (error.message.includes('File size')) {
+      errorMessage = 'File size is too large. Please use files smaller than 10MB.';
+    } else if (error.message.includes('Invalid file type')) {
+      errorMessage = 'Invalid file type. Please use JPG, PNG, GIF, or MP4 files only.';
+    }
+    
+    // Create and show error notification
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #f44336;
+      color: white;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      max-width: 400px;
+      font-weight: 500;
+    `;
+    errorDiv.textContent = errorMessage;
+    document.body.appendChild(errorDiv);
+    
+    // Remove error message after 5 seconds
+    setTimeout(() => {
+      if (errorDiv && errorDiv.parentNode) {
+        errorDiv.remove();
+      }
+    }, 5000);
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -1293,13 +1366,41 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Initialize photo modal functionality
+function initializePhotoModal() {
+  // Set up file upload functionality
+  setupFileUpload();
+  
+  // Set default upload method
+  currentUploadMethod = 'url';
+  
+  // Ensure URL upload is active by default
+  const urlSection = document.getElementById('url-upload');
+  const fileSection = document.getElementById('file-upload');
+  
+  if (urlSection && fileSection) {
+    urlSection.classList.add('active');
+    fileSection.classList.remove('active');
+  }
+  
+  // Set up method option click handlers
+  document.querySelectorAll('.method-option').forEach((option, index) => {
+    option.addEventListener('click', () => {
+      const method = index === 0 ? 'url' : 'file';
+      selectUploadMethod(method);
+    });
+  });
+  
+  console.log('Photo modal initialized successfully');
+}
+
 // Enhanced loading sequence with elegant reveals
 window.addEventListener('load', () => {
   document.body.style.opacity = '0';
   document.body.style.transition = 'opacity 0.8s ease';
   
-  // Initialize file upload functionality
-  setupFileUpload();
+  // Initialize photo modal functionality
+  initializePhotoModal();
   
   // Create loading overlay
   const loadingOverlay = document.createElement('div');

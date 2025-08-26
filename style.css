@@ -2131,13 +2131,110 @@ img, video, iframe {
   line-height: 1.4;
 }
 
-/* Upload Sections */
+/* Photo Form Specific Styling */
+.photo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: none;
+}
+
+.photo-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.photo-form .form-group label {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.photo-form .form-group input,
+.photo-form .form-group select,
+.photo-form .form-group textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid rgba(200,169,81,0.3);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: #fff;
+  transition: var(--transition-smooth);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.photo-form .form-group input:focus,
+.photo-form .form-group select:focus,
+.photo-form .form-group textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200,169,81,0.15);
+  transform: translateY(-1px);
+}
+
+.photo-form .form-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.photo-form .form-actions .btn {
+  min-width: 140px;
+}
+
+/* Upload Section Layout */
 .upload-section {
   display: none;
+  width: 100%;
 }
 
 .upload-section.active {
   display: block;
+  width: 100%;
+}
+
+.upload-section .form-group {
+  width: 100%;
+}
+
+/* Photo Success Styling */
+.photo-success {
+  text-align: center;
+  padding: 40px 20px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.photo-success.active {
+  display: flex;
+}
+
+.photo-success .success-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.photo-success h3 {
+  color: var(--gold-dark);
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+}
+
+.photo-success p {
+  color: var(--muted);
+  margin-bottom: 24px;
+  font-size: 1.1rem;
 }
 
 /* File Upload Area */
@@ -2157,6 +2254,23 @@ img, video, iframe {
   gap: 16px;
   width: 100%;
   box-sizing: border-box;
+  margin: 8px 0;
+}
+
+@media (max-width: 768px) {
+  .file-upload-area {
+    padding: 30px 15px;
+    min-height: 120px;
+    gap: 12px;
+  }
+  
+  .upload-icon {
+    font-size: 36px !important;
+  }
+  
+  .upload-text {
+    font-size: 14px;
+  }
 }
 
 .file-upload-area:hover {
@@ -2599,6 +2713,42 @@ img, video, iframe {
 }
 
 @media (max-width: 480px) {
+  .photo-modal-content {
+    width: 100vw;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  .modal__body {
+    padding: 12px;
+  }
+  
+  .upload-method-selector {
+    margin: 12px 0;
+  }
+  
+  .photo-form .form-group {
+    gap: 6px;
+  }
+  
+  .photo-form .form-group input,
+  .photo-form .form-group select,
+  .photo-form .form-group textarea {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .photo-form .form-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .photo-form .form-actions .btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
   .gallery-grid {
     grid-template-columns: repeat(2, 1fr);
   }
