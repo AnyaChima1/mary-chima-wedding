@@ -535,7 +535,7 @@
             <h4 style="margin: 0 0 8px 0; color: #c8a951; font-size: 14px; font-weight: 600;">📸 Photo Sharing Tips</h4>
             <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #666;">
               <li><strong>URL Method:</strong> Upload to Google Photos, iCloud, or Dropbox first, then share the public link</li>
-              <li><strong>File Upload:</strong> Select photos directly from your device (up to 10MB each)</li>
+              <li><strong>File Upload:</strong> Click "Upload Files" to directly select photos from your device (up to 10MB each)</li>
               <li><strong>Access Issues:</strong> Make sure shared links are public and accessible to everyone</li>
             </ul>
           </div>
@@ -550,7 +550,7 @@
             <div class="method-option" onclick="selectUploadMethod('file')">
               <div class="method-icon">📁</div>
               <div class="method-title">Upload Files</div>
-              <div class="method-desc">Upload directly from your device</div>
+              <div class="method-desc">Click to select files from your device</div>
             </div>
           </div>
           
@@ -571,10 +571,10 @@
                 <label for="photo-url">Photo/Video URL *</label>
                 <input type="url" id="photo-url" name="photo_url" placeholder="https://photos.app.goo.gl/your-photo-link">
                 <small style="color: #666; font-size: 12px; line-height: 1.4; margin-top: 4px; display: block;">
-                  ✅ <strong>Google Photos:</strong> Upload → Share album → Copy link<br>
+                  ✅ <strong>Google Photos:</strong> Share album → Copy link → Make sure it's "Anyone with link"<br>
                   ✅ <strong>iCloud:</strong> Create shared album → Copy link<br> 
                   ✅ <strong>Dropbox:</strong> Upload → Share → Copy public link<br>
-                  ⚠️ Make sure links are set to "Anyone with link can view"
+                  ⚠️ <strong>Note:</strong> Photos may not display properly if links require sign-in, but they'll still be saved
                 </small>
               </div>
             </div>
@@ -583,10 +583,10 @@
             <div id="file-upload" class="upload-section">
               <div class="form-group">
                 <label for="photo-files">Upload Photos/Videos *</label>
-                <div class="file-upload-area" onclick="document.getElementById('photo-files').click()">
+                <div class="file-upload-area" onclick="document.getElementById('photo-files').click()" style="cursor: pointer;">
                   <div class="upload-icon">📷</div>
                   <div class="upload-text">
-                    <strong>Click to upload</strong> or drag and drop
+                    <strong>Click to select files</strong> or drag and drop
                     <br><small>JPG, PNG, GIF, MP4 up to 10MB each</small>
                   </div>
                   <input type="file" id="photo-files" name="files" multiple accept="image/*,video/*" style="display: none;">

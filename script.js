@@ -1057,6 +1057,14 @@ function selectUploadMethod(method) {
     methodOptions[0]?.classList.add('active');
   } else if (method === 'file') {
     methodOptions[1]?.classList.add('active');
+    
+    // Automatically open file picker when file method is selected
+    setTimeout(() => {
+      const fileInput = document.getElementById('photo-files');
+      if (fileInput) {
+        fileInput.click();
+      }
+    }, 100);
   }
   
   // Show/hide upload sections
@@ -1262,8 +1270,11 @@ function displayGallery(photos) {
         onLoad="this.style.display='block'; this.nextElementSibling.style.display='none';">
         <div class="error-placeholder" style="display: none; padding: 20px; background: #f5f5f5; text-align: center; color: #666; border-radius: 8px;">
           <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
-          <div>Image unavailable</div>
-          <small>URL may be invalid or access restricted</small>
+          <div>Photo not accessible</div>
+          <small>This may be a Google Photos link that requires permission</small>
+          <div style="margin-top: 8px;">
+            <a href="${photoSrc}" target="_blank" style="color: #c8a951; text-decoration: none; font-size: 12px;">🔗 Open original link</a>
+          </div>
         </div>`;
     }
     
@@ -1351,6 +1362,33 @@ function openLightbox(index) {
   document.getElementById('lightbox-contributor').textContent = photo.name;
   document.getElementById('lightbox-category').textContent = photo.category;
   document.getElementById('lightbox-date').textContent = new Date(photo.created_at).toLocaleDateString();
+  
+  // Add "View Original Link" button for all photos
+  const lightboxInfo = document.querySelector('.lightbox-info');
+  let linkButton = lightboxInfo.querySelector('.original-link-btn');
+  if (!linkButton) {
+    linkButton = document.createElement('div');
+    linkButton.className = 'original-link-btn';
+    linkButton.style.cssText = `
+      margin-top: 12px; 
+      padding: 8px 16px; 
+      background: #c8a951; 
+      color: white; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+    `;
+    linkButton.innerHTML = '🔗 View Original Link';
+    linkButton.onclick = () => window.open(photo.photo_url, '_blank');
+    linkButton.onmouseover = () => linkButton.style.background = '#a98c3e';
+    linkButton.onmouseout = () => linkButton.style.background = '#c8a951';
+    lightboxInfo.appendChild(linkButton);
+  } else {
+    // Update the click handler for existing button
+    linkButton.onclick = () => window.open(photo.photo_url, '_blank');
+  }
   
   lightbox.style.display = 'flex';
   setTimeout(() => lightbox.classList.add('active'), 10);
@@ -1658,6 +1696,8 @@ function showPhotoSuccess(message = 'Thank you for sharing your memories with us
   selectedFiles = [];
   updateFilePreview();
 }
+
+
 
 // ========================================
 // WISHES MODAL FUNCTIONALITY

@@ -126,13 +126,14 @@ exports.handler = async (event, context) => {
     // Additional validation for common photo sharing platforms
     const trimmedUrl = photo_url.trim();
     
-    // Google Photos URL patterns
+    // Google Photos URL patterns (more flexible)
     const isGooglePhotos = trimmedUrl.includes('photos.google.com') || 
                           trimmedUrl.includes('photos.app.goo.gl') ||
-                          trimmedUrl.includes('drive.google.com');
+                          trimmedUrl.includes('drive.google.com') ||
+                          /goo\.gl/.test(trimmedUrl);
     
     // iCloud Photos URL patterns  
-    const isICloudPhotos = trimmedUrl.includes('icloud.com/photos') ||
+    const isICloudPhotos = trimmedUrl.includes('icloud.com') ||
                           trimmedUrl.includes('share.icloud.com');
     
     // Dropbox URL patterns
@@ -150,17 +151,37 @@ exports.handler = async (event, context) => {
                        trimmedUrl.includes('imagekit.io') ||
                        trimmedUrl.includes('unsplash.com');
     
-    // Basic domain validation - ensure it has a valid domain structure
-    const domainRegex = /^https?:\/\/[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}(\/.*)*/;
-    if (!domainRegex.test(trimmedUrl)) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Please provide a valid photo sharing URL from Google Photos, iCloud, Dropbox, or direct image link'
-        }),
-      };
+    // Accept any URL from known photo sharing platforms or direct images
+    const isValidPhotoUrl = isGooglePhotos || isICloudPhotos || isDropbox || 
+                           isOneDrive || isDirectImage || isImageHost;
+    
+    // For unknown domains, do basic validation but be more permissive
+    if (!isValidPhotoUrl) {
+      // More lenient domain validation - allow any domain with proper format
+      const basicDomainRegex = /^https?:\/\/[\w.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/;
+      if (!basicDomainRegex.test(trimmedUrl)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Please provide a valid URL. Supported: Google Photos, iCloud, Dropbox, OneDrive, or direct image links.',
+            requestId
+          }),
+        };
+      }
     }
+    
+    logDebug('URL_VALIDATION', {
+      requestId,
+      url: trimmedUrl.substring(0, 100) + '...',
+      isGooglePhotos,
+      isICloudPhotos, 
+      isDropbox,
+      isOneDrive,
+      isDirectImage,
+      isImageHost,
+      isValidPhotoUrl
+    });
 
     // Initialize Neon connection
     const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
