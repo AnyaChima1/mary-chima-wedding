@@ -929,13 +929,29 @@ img, video, iframe {
   margin: 0 0 20px;
   font-weight: 300;
   letter-spacing: -2px;
+  /* Fallback color */
+  color: var(--text);
   background: linear-gradient(135deg, var(--text) 0%, var(--gold-dark) 70%, var(--gold) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   position: relative;
+  z-index: 3;
   opacity: 0;
   animation: titleReveal 1.2s var(--elastic) 0.5s both;
+}
+
+/* Ensure header title is always visible */
+@supports not (background-clip: text) {
+  .header__title {
+    color: var(--text);
+    -webkit-text-fill-color: var(--text);
+  }
+}
+
+/* Override for enhanced title to use gold color */
+.header__title.enhanced-title {
+  color: var(--gold);
 }
 
 .header__title::after {
@@ -2100,21 +2116,45 @@ img, video, iframe {
 
 /* Enhanced Title Effects */
 .enhanced-title {
+  /* Fallback color for browsers that don't support background-clip */
+  color: var(--gold);
   background: linear-gradient(
     135deg,
     var(--gold) 0%,
     #d4a574 50%,
     var(--gold-dark) 100%
   );
+  background-size: 200% 100%;
+  /* Only apply gradient text if supported */
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: titleShimmer 3s ease-in-out infinite;
 }
 
+/* Fallback for browsers that don't support background-clip: text */
+@supports not (background-clip: text) {
+  .enhanced-title {
+    color: var(--gold);
+    -webkit-text-fill-color: var(--gold);
+  }
+}
+
+/* Ensure visibility on older browsers */
+@supports not (-webkit-background-clip: text) {
+  .enhanced-title {
+    color: var(--gold);
+    -webkit-text-fill-color: var(--gold);
+  }
+}
+
 @keyframes titleShimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%, 100% { 
+    background-position: 0% 50%;
+  }
+  50% { 
+    background-position: 100% 50%;
+  }
 }
 
 /* Interactive Photo Gallery Enhancements */

@@ -2412,14 +2412,47 @@ function initializeEnhancedFeatures() {
   createFloatingParticles();
   addAdvancedInteractions();
   
-  // Add enhanced title effect to main heading
-  const mainTitle = document.querySelector('.header__title');
-  if (mainTitle) {
-    mainTitle.classList.add('enhanced-title');
-  }
+  // Ensure title visibility
+  ensureTitleVisibility();
   
   console.log('🎆 Enhanced wedding features initialized!');
   console.log('🔥 Features: QR codes, enhanced gallery, floating particles, advanced interactions!');
+}
+
+// Ensure title is always visible
+function ensureTitleVisibility() {
+  const mainTitle = document.querySelector('.header__title');
+  if (mainTitle) {
+    // Add enhanced title class
+    mainTitle.classList.add('enhanced-title');
+    
+    // Force visibility and proper styling
+    mainTitle.style.opacity = '1';
+    mainTitle.style.visibility = 'visible';
+    mainTitle.style.display = 'block';
+    
+    // Fallback color if gradient text isn't supported
+    const testDiv = document.createElement('div');
+    testDiv.style.cssText = 'background: linear-gradient(135deg, red, blue); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;';
+    document.body.appendChild(testDiv);
+    
+    const computedStyle = window.getComputedStyle(testDiv);
+    const supportsGradientText = computedStyle.webkitBackgroundClip === 'text' || computedStyle.backgroundClip === 'text';
+    
+    document.body.removeChild(testDiv);
+    
+    if (!supportsGradientText) {
+      // Use solid gold color for browsers that don't support gradient text
+      mainTitle.style.color = '#c8a951';
+      mainTitle.style.webkitTextFillColor = '#c8a951';
+    }
+    
+    // Ensure z-index is high enough
+    mainTitle.style.zIndex = '10';
+    mainTitle.style.position = 'relative';
+    
+    console.log('✅ Title visibility ensured:', mainTitle.textContent);
+  }
 }
 
 // Initialize when DOM is ready
@@ -2428,3 +2461,31 @@ if (document.readyState === 'loading') {
 } else {
   initializeEnhancedFeatures();
 }
+
+// Immediate title visibility check (runs as soon as script loads)
+(function immediateEnsureTitleVisibility() {
+  function checkTitle() {
+    const title = document.querySelector('.header__title');
+    if (title) {
+      // Force visibility immediately
+      title.style.opacity = '1';
+      title.style.visibility = 'visible';
+      title.style.color = '#c8a951';
+      title.style.zIndex = '10';
+      title.style.position = 'relative';
+      console.log('⚡ Emergency title visibility activated');
+    } else {
+      // Title not found yet, try again in a moment
+      setTimeout(checkTitle, 100);
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkTitle);
+  } else {
+    checkTitle();
+  }
+  
+  // Also run after a short delay as additional safety
+  setTimeout(checkTitle, 500);
+})();
