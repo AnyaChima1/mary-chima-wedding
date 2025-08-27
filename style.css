@@ -56,6 +56,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Hidden sections by default - will be shown after RSVP */
+#story, #details, #rsvp, #calendar, #photos {
+  display: none;
+}
+
 /* Dynamic background animation */
 body::before {
   content: '';
@@ -170,6 +175,9 @@ p {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
   }
 }
 
