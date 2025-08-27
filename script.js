@@ -573,16 +573,35 @@ rsvpForm?.addEventListener('submit', async (e) => {
     rsvpForm.style.display = 'none';
     rsvpSuccess.style.display = 'block';
     
-    // Update success message based on whether it was an update
+    // Update success message based on attendance selection and whether it was an update
     const successTitle = rsvpSuccess.querySelector('h3');
     const successText = rsvpSuccess.querySelector('p');
     
-    if (result.updated) {
-      successTitle.textContent = 'RSVP Updated!';
-      successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+    if (rsvpData.attendance === 'yes') {
+      if (result.updated) {
+        successTitle.textContent = 'RSVP Updated!';
+        successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+      } else {
+        successTitle.textContent = 'Thank You!';
+        successText.textContent = 'Your RSVP has been received. We look forward to celebrating with you!';
+      }
+    } else if (rsvpData.attendance === 'no') {
+      if (result.updated) {
+        successTitle.textContent = 'RSVP Updated!';
+        successText.textContent = 'Thank you for letting us know. While we will miss having you there in person, your presence in our hearts and thoughts means the world to us.';
+      } else {
+        successTitle.textContent = 'Thank You!';
+        successText.textContent = 'Thank you for letting us know. While we will miss having you there in person, your presence in our hearts and thoughts means the world to us.';
+      }
     } else {
-      successTitle.textContent = 'Thank You!';
-      successText.textContent = 'Your RSVP has been received. We can\'t wait to celebrate with you!';
+      // Fallback for any other case
+      if (result.updated) {
+        successTitle.textContent = 'RSVP Updated!';
+        successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+      } else {
+        successTitle.textContent = 'Thank You!';
+        successText.textContent = 'Your RSVP has been received. We can\'t wait to celebrate with you!';
+      }
     }
     
     // Create celebration effect
@@ -946,16 +965,35 @@ function enhanceRSVPSubmission() {
         updatedForm.style.display = 'none';
         rsvpSuccess.style.display = 'block';
         
-        // Update success message based on whether it was an update
+        // Update success message based on attendance selection and whether it was an update
         const successTitle = rsvpSuccess.querySelector('h3');
         const successText = rsvpSuccess.querySelector('p');
         
-        if (result.updated) {
-          successTitle.textContent = 'RSVP Updated!';
-          successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+        if (rsvpData.attendance === 'yes') {
+          if (result.updated) {
+            successTitle.textContent = 'RSVP Updated!';
+            successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+          } else {
+            successTitle.textContent = 'Thank You!';
+            successText.textContent = 'Your RSVP has been received. We look forward to celebrating with you!';
+          }
+        } else if (rsvpData.attendance === 'no') {
+          if (result.updated) {
+            successTitle.textContent = 'RSVP Updated!';
+            successText.textContent = 'Thank you for letting us know. While we will miss having you there in person, your presence in our hearts and thoughts means the world to us.';
+          } else {
+            successTitle.textContent = 'Thank You!';
+            successText.textContent = 'Thank you for letting us know. While we will miss having you there in person, your presence in our hearts and thoughts means the world to us.';
+          }
         } else {
-          successTitle.textContent = 'Thank You!';
-          successText.textContent = 'Your RSVP has been received. We can\'t wait to celebrate with you!';
+          // Fallback for any other case
+          if (result.updated) {
+            successTitle.textContent = 'RSVP Updated!';
+            successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+          } else {
+            successTitle.textContent = 'Thank You!';
+            successText.textContent = 'Your RSVP has been received. We can\'t wait to celebrate with you!';
+          }
         }
         
         // Create celebration effect
