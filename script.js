@@ -2236,23 +2236,8 @@ function closeQRModal() {
 
 // Add QR code buttons to relevant sections
 function addQRCodeFeatures() {
-  // Add QR for Photo Sharing only (RSVP QR code removed per user request)
-  const photosSection = document.querySelector('#photos');
-  if (photosSection) {
-    const qrButton = document.createElement('button');
-    qrButton.className = 'btn btn--ghost';
-    qrButton.innerHTML = '📱 Share Photos';
-    qrButton.onclick = () => {
-      createQRModal(
-        'Photo Sharing QR Code',
-        'https://maryandchima.love/#photos',
-        'Share this QR code so guests can quickly upload photos during the celebration!'
-      );
-    };
-    
-    const actions = photosSection.querySelector('.actions');
-    if (actions) actions.appendChild(qrButton);
-  }
+  // All QR codes removed per user request for UI simplification
+  // This function is kept for potential future use but currently does nothing
 }
 
 // Enhanced photo gallery with modern features
