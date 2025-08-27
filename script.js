@@ -699,6 +699,289 @@ songForm?.addEventListener('submit', async (e) => {
 });
 
 // ========================================
+// ACCESS RESTRICTION FUNCTIONALITY
+// ========================================
+
+// Check if user has RSVP'd as attending
+function hasRSVPdAsAttending() {
+  const rsvpStatus = localStorage.getItem('weddingRSVPStatus');
+  return rsvpStatus === 'attending';
+}
+
+// Hide restricted sections for non-attending users
+function hideRestrictedSections() {
+  // Only hide sections if user hasn't RSVP'd as attending
+  if (!hasRSVPdAsAttending()) {
+    // Hide the restricted sections
+    const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+    restrictedSections.forEach(sectionId => {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.style.display = 'none';
+      }
+    });
+    
+    // Show a message instead
+    showAccessRestrictedMessage();
+  }
+}
+
+// Show access restricted message
+function showAccessRestrictedMessage() {
+  const message = document.createElement('div');
+  message.id = 'access-restricted-message';
+  message.style.cssText = `
+    background: linear-gradient(135deg, #fafafa 0%, #f8f6f0 100%);
+    border: 2px solid #c8a951;
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    margin: 40px auto;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.06);
+  `;
+  
+  message.innerHTML = `
+    <div style="font-size: 3rem; margin-bottom: 20px;">🔒</div>
+    <h2 style="color: #c8a951; margin-bottom: 15px;">Private Wedding Information</h2>
+    <p style="font-size: 1.1rem; line-height: 1.6; color: #333; margin-bottom: 25px;">
+      This content is only available to confirmed guests.<br>
+      Please RSVP as attending to access the full wedding information.
+    </p>
+    <button onclick="document.getElementById('rsvp-modal').classList.add('is-open'); document.body.style.overflow = 'hidden';" 
+            class="btn btn--primary" style="font-size: 1.1rem; padding: 12px 30px;">
+      RSVP Now to Access
+    </button>
+  `;
+  
+  // Insert the message before the footer
+  const footer = document.querySelector('.footer');
+  if (footer) {
+    footer.parentNode.insertBefore(message, footer);
+  }
+}
+
+// Show restricted sections after successful RSVP
+function showRestrictedSections() {
+  const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+  restrictedSections.forEach(sectionId => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.style.display = 'block';
+    }
+  });
+  
+  // Remove the access restricted message if it exists
+  const message = document.getElementById('access-restricted-message');
+  if (message) {
+    message.remove();
+  }
+}
+
+// Show confirmation message after successful RSVP
+function showRSVPConfirmation() {
+  // Create confirmation message
+  const confirmation = document.createElement('div');
+  confirmation.id = 'rsvp-confirmation';
+  confirmation.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 10000;
+    max-width: 350px;
+    animation: slideInRight 0.5s ease;
+  `;
+  
+  confirmation.innerHTML = `
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+      <div style="font-size: 1.5rem; margin-right: 10px;">🎉</div>
+      <h3 style="margin: 0;">Access Granted!</h3>
+    </div>
+    <p style="margin: 0 0 15px 0; line-height: 1.5;">
+      Thank you for confirming your attendance. You now have access to all wedding information.
+    </p>
+    <button onclick="this.parentElement.remove()" 
+            style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); 
+                   color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+      Dismiss
+    </button>
+  `;
+  
+  // Add slide-in animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.body.appendChild(confirmation);
+  
+  // Auto-remove after 8 seconds
+  setTimeout(() => {
+    if (confirmation.parentNode) {
+      confirmation.remove();
+    }
+  }, 8000);
+}
+
+// Enhanced RSVP form submission with access control
+function enhanceRSVPSubmission() {
+  const rsvpForm = document.getElementById('rsvp-form');
+  const rsvpSuccess = document.getElementById('rsvp-success');
+  
+  if (rsvpForm) {
+    // Remove existing event listener by cloning and replacing
+    const newForm = rsvpForm.cloneNode(true);
+    rsvpForm.parentNode.replaceChild(newForm, rsvpForm);
+    
+    // Add new event listener
+    const updatedForm = document.getElementById('rsvp-form');
+    updatedForm?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Add loading state
+      const submitBtn = updatedForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Submitting... ⏳';
+      submitBtn.disabled = true;
+      
+      try {
+        // Get form data
+        const formData = new FormData(updatedForm);
+        const rsvpData = {
+          name: formData.get('name'),
+          email: formData.get('email'),
+          attendance: formData.get('attendance'),
+          guest_count: formData.get('guest_count') || '1',
+          guest_names: formData.get('guest_names') || '',
+          dietary: formData.get('dietary') || ''
+        };
+        
+        // Submit to Netlify function
+        const response = await fetch('/.netlify/functions/submit-rsvp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(rsvpData)
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to submit RSVP');
+        }
+        
+        // Show success state
+        updatedForm.style.display = 'none';
+        rsvpSuccess.style.display = 'block';
+        
+        // Update success message based on whether it was an update
+        const successTitle = rsvpSuccess.querySelector('h3');
+        const successText = rsvpSuccess.querySelector('p');
+        
+        if (result.updated) {
+          successTitle.textContent = 'RSVP Updated!';
+          successText.textContent = 'Your RSVP has been successfully updated. We look forward to celebrating with you!';
+        } else {
+          successTitle.textContent = 'Thank You!';
+          successText.textContent = 'Your RSVP has been received. We can\'t wait to celebrate with you!';
+        }
+        
+        // Create celebration effect
+        createCelebration(rsvpSuccess);
+        
+        // Handle access restriction based on attendance
+        if (rsvpData.attendance === 'yes') {
+          // Grant access to restricted content
+          localStorage.setItem('weddingRSVPStatus', 'attending');
+          
+          // Show restricted sections
+          showRestrictedSections();
+          
+          // Show confirmation message
+          showRSVPConfirmation();
+        } else {
+          // Remove access if they're not attending
+          localStorage.removeItem('weddingRSVPStatus');
+        }
+        
+        console.log('RSVP Submitted Successfully:', result);
+        
+      } catch (error) {
+        console.error('RSVP submission error:', error);
+        
+        // Show user-friendly error message
+        let errorMessage = 'Sorry, there was an error submitting your RSVP. Please try again.';
+        
+        if (error.message.includes('email already exists')) {
+          errorMessage = 'An RSVP with this email already exists. Please use the same form to update your response.';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (error.message.includes('Missing required fields')) {
+          errorMessage = 'Please fill in all required fields (name, email, and attendance).';
+        }
+        
+        // Create and show error message
+        const existingError = updatedForm.querySelector('.error-message');
+        if (existingError) {
+          existingError.remove();
+        }
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.cssText = `
+          background: rgba(244, 67, 54, 0.1);
+          color: #d32f2f;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(244, 67, 54, 0.3);
+          animation: fadeInUp 0.3s ease;
+        `;
+        errorDiv.textContent = errorMessage;
+        
+        updatedForm.insertBefore(errorDiv, updatedForm.querySelector('.form-actions'));
+        
+        // Remove error message after 5 seconds
+        setTimeout(() => {
+          if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+          }
+        }, 5000);
+        
+      } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+  }
+}
+
+// Initialize access restriction on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Enhance RSVP submission with access control
+  enhanceRSVPSubmission();
+  
+  // Check if user has already RSVP'd as attending
+  if (hasRSVPdAsAttending()) {
+    // Show all sections if they've already RSVP'd
+    showRestrictedSections();
+  } else {
+    // Hide restricted sections for new visitors
+    hideRestrictedSections();
+  }
+});
+
+// ========================================
 // ENHANCED DEBUGGING AND ERROR LOGGING SYSTEM
 // ========================================
 
