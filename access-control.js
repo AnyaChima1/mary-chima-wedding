@@ -129,10 +129,10 @@ function showRestrictedSections() {
     headerMessage.remove();
   }
   
-  // Show the original RSVP button
+  // Hide the RSVP button when user has already RSVP'd
   const rsvpButton = document.getElementById('rsvp-hero-btn');
   if (rsvpButton) {
-    rsvpButton.style.display = 'inline-block';
+    rsvpButton.style.display = 'none';
   }
 }
 
