@@ -571,6 +571,13 @@ rsvpForm?.addEventListener('submit', async (e) => {
     
     // Show success state
     rsvpForm.style.display = 'none';
+    
+    // Hide the introductory message
+    const modalIntro = document.querySelector('#rsvp-modal .modal__intro');
+    if (modalIntro) {
+      modalIntro.style.display = 'none';
+    }
+    
     rsvpSuccess.style.display = 'block';
     
     // Update success message based on attendance selection and whether it was an update
@@ -963,6 +970,13 @@ function enhanceRSVPSubmission() {
         
         // Show success state
         updatedForm.style.display = 'none';
+        
+        // Hide the introductory message
+        const modalIntro = document.querySelector('#rsvp-modal .modal__intro');
+        if (modalIntro) {
+          modalIntro.style.display = 'none';
+        }
+        
         rsvpSuccess.style.display = 'block';
         
         // Update success message based on attendance selection and whether it was an update
