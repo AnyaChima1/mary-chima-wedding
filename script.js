@@ -1300,6 +1300,9 @@ ErrorLogger.log('info', 'SYSTEM_INIT', 'Enhanced debugging system initialized');
 // DEBUG CONSOLE FUNCTIONALITY
 // ========================================
 
+// DEBUG CONSOLE FUNCTIONALITY
+// ========================================
+
 // Show debug console when errors occur
 function showDebugConsole() {
   const debugConsole = document.getElementById('debug-console');

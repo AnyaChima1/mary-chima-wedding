@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test RSVP Button Visibility</title>
+    <style>
+        #rsvp-hero-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #c8a951;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        #access-restricted-message-header {
+            background: linear-gradient(135deg, #fafafa 0%, #f8f6f0 100%);
+            border: 2px solid #c8a951;
+            border-radius: 16px;
+            padding: 30px 20px;
+            text-align: center;
+            margin: 30px auto;
+            max-width: 600px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.06);
+        }
+        .header__content {
+            text-align: center;
+            padding: 50px 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header__content">
+            <h1>Wedding Header</h1>
+            <a href="#rsvp-modal" class="btn btn--primary" id="rsvp-hero-btn">RSVP Here</a>
+        </div>
+    </header>
+
+    <main>
+        <section id="story">Story Section</section>
+        <section id="details">Details Section</section>
+        <section id="calendar">Calendar Section</section>
+        <section id="photos">Photos Section</section>
+    </main>
+
+    <script>
+        // Test functions from access-control.js
+        function hasRSVPdAsAttending() {
+            const rsvpStatus = localStorage.getItem('weddingRSVPStatus');
+            return rsvpStatus === 'attending';
+        }
+
+        function showRestrictedSections() {
+            const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+            restrictedSections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.display = 'block';
+                }
+            });
+            
+            // Remove the access restricted message from header if it exists
+            const headerMessage = document.getElementById('access-restricted-message-header');
+            if (headerMessage) {
+                headerMessage.remove();
+            }
+            
+            // Show the original RSVP button
+            const rsvpButton = document.getElementById('rsvp-hero-btn');
+            if (rsvpButton) {
+                rsvpButton.style.display = 'inline-block';
+            }
+        }
+
+        function hideRestrictedSections() {
+            // Only hide sections if user hasn't RSVP'd as attending
+            if (!hasRSVPdAsAttending()) {
+                // Hide the restricted sections
+                const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+                restrictedSections.forEach(sectionId => {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.style.display = 'none';
+                    }
+                });
+                
+                // Show a message in the header instead of the RSVP button
+                showAccessRestrictedMessageInHeader();
+            }
+        }
+
+        function showAccessRestrictedMessageInHeader() {
+            // Check if message already exists
+            if (document.getElementById('access-restricted-message-header')) {
+                return;
+            }
+            
+            // Remove the existing RSVP button
+            const rsvpButton = document.getElementById('rsvp-hero-btn');
+            if (rsvpButton) {
+                rsvpButton.style.display = 'none';
+            }
+            
+            // Create the access restricted message in the header
+            const headerContent = document.querySelector('.header__content');
+            if (headerContent) {
+                const messageDiv = document.createElement('div');
+                messageDiv.id = 'access-restricted-message-header';
+                messageDiv.innerHTML = '<h2>Private Wedding Information</h2><p>This content is only available to confirmed guests.</p><button>RSVP Now to Access</button>';
+                headerContent.appendChild(messageDiv);
+            }
+        }
+
+        // Simulate page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user has already RSVP'd as attending
+            if (hasRSVPdAsAttending()) {
+                // Show all sections if they've already RSVP'd
+                showRestrictedSections();
+            } else {
+                // Hide restricted sections for new visitors
+                hideRestrictedSections();
+            }
+        });
+
+        // Test functions
+        function simulateRSVPAsAttending() {
+            localStorage.setItem('weddingRSVPStatus', 'attending');
+            location.reload();
+        }
+
+        function simulateRSVPAsNotAttending() {
+            localStorage.removeItem('weddingRSVPStatus');
+            location.reload();
+        }
+
+        function clearRSVPStatus() {
+            localStorage.removeItem('weddingRSVPStatus');
+            location.reload();
+        }
+    </script>
+
+    <div style="position: fixed; bottom: 20px; left: 20px; background: #f0f0f0; padding: 10px; border-radius: 5px;">
+        <button onclick="simulateRSVPAsAttending()">Simulate RSVP as Attending</button>
+        <button onclick="simulateRSVPAsNotAttending()">Simulate RSVP as Not Attending</button>
+        <button onclick="clearRSVPStatus()">Clear RSVP Status</button>
+    </div>
+</body>
+</html>
