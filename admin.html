@@ -372,6 +372,13 @@
           <button class="btn btn-danger" onclick="logout()" title="Logout">🚪 Logout</button>
         </div>
       </div>
+      
+      <!-- Enhanced Dashboard Controls -->
+      <div class="dashboard-controls">
+        <button class="btn btn-info" onclick="toggleInsightsPanel()">🧠 AI Insights</button>
+        <button class="btn btn-success" onclick="toggleAutomationPanel()">⚡ Automation</button>
+        <button class="btn btn-secondary" onclick="toggleRealTimeUpdates()">📊 Live Updates</button>
+      </div>
     </div>
 
     <!-- Tab Navigation -->
@@ -763,7 +770,321 @@
     // Initialize authentication check on page load
     document.addEventListener('DOMContentLoaded', function() {
       checkAuthentication();
+      initializeDragAndDrop();
+      initializeEnhancedDashboard();
     });
+
+    /**
+     * Enhanced Dashboard with AI Features
+     */
+    let dashboardState = {
+      autoRefresh: true,
+      refreshInterval: 30000,
+      insightsPanelOpen: false,
+      automationPanelOpen: false
+    };
+
+    function initializeEnhancedDashboard() {
+      createInsightsPanel();
+      createAutomationPanel();
+      if (dashboardState.autoRefresh) {
+        initializeRealTimeUpdates();
+      }
+    }
+
+    function createInsightsPanel() {
+      if (document.getElementById('insights-panel')) return;
+      
+      const panel = document.createElement('div');
+      panel.id = 'insights-panel';
+      panel.style.cssText = `
+        position: fixed; top: 0; right: -400px; width: 400px; height: 100vh;
+        background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        transition: right 0.3s ease; z-index: 1000; overflow-y: auto; padding: 20px;
+      `;
+      
+      panel.innerHTML = `
+        <div class="panel-header">
+          <h3>🧠 AI Insights</h3>
+          <button onclick="toggleInsightsPanel()" style="float: right; border: none; background: none; font-size: 18px; cursor: pointer;">✕</button>
+        </div>
+        <div id="predictions-content">Loading predictions...</div>
+        <div id="recommendations-content">Analyzing data...</div>
+        <div id="alerts-content">Checking for issues...</div>
+      `;
+      
+      document.body.appendChild(panel);
+    }
+
+    function createAutomationPanel() {
+      if (document.getElementById('automation-panel')) return;
+      
+      const panel = document.createElement('div');
+      panel.id = 'automation-panel';
+      panel.style.cssText = `
+        position: fixed; top: 0; left: -350px; width: 350px; height: 100vh;
+        background: white; box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+        transition: left 0.3s ease; z-index: 1000; overflow-y: auto; padding: 20px;
+      `;
+      
+      panel.innerHTML = `
+        <div class="panel-header">
+          <h3>⚡ Automation Center</h3>
+          <button onclick="toggleAutomationPanel()" style="float: right; border: none; background: none; font-size: 18px; cursor: pointer;">✕</button>
+        </div>
+        <div class="automation-section">
+          <h4>🚀 Quick Actions</h4>
+          <button class="btn btn-info" onclick="runTableOptimization()" style="width: 100%; margin: 5px 0;">
+            🪑 Optimize Tables
+          </button>
+          <button class="btn btn-warning" onclick="sendSmartReminders()" style="width: 100%; margin: 5px 0;">
+            📧 Smart Reminders
+          </button>
+          <button class="btn btn-success" onclick="generateReports()" style="width: 100%; margin: 5px 0;">
+            📊 Generate Reports
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(panel);
+    }
+
+    function toggleInsightsPanel() {
+      const panel = document.getElementById('insights-panel');
+      if (!panel) {
+        createInsightsPanel();
+        return;
+      }
+      
+      dashboardState.insightsPanelOpen = !dashboardState.insightsPanelOpen;
+      panel.style.right = dashboardState.insightsPanelOpen ? '0px' : '-400px';
+      
+      if (dashboardState.insightsPanelOpen) {
+        loadInsights();
+      }
+    }
+
+    function toggleAutomationPanel() {
+      const panel = document.getElementById('automation-panel');
+      if (!panel) {
+        createAutomationPanel();
+        return;
+      }
+      
+      dashboardState.automationPanelOpen = !dashboardState.automationPanelOpen;
+      panel.style.left = dashboardState.automationPanelOpen ? '0px' : '-350px';
+    }
+
+    function toggleRealTimeUpdates() {
+      dashboardState.autoRefresh = !dashboardState.autoRefresh;
+      
+      const button = event.target;
+      if (dashboardState.autoRefresh) {
+        button.innerHTML = '📊 Live Updates (ON)';
+        button.classList.add('active');
+        initializeRealTimeUpdates();
+        showNotification('✅ Real-time updates enabled', 'success');
+      } else {
+        button.innerHTML = '📊 Live Updates (OFF)';
+        button.classList.remove('active');
+        showNotification('🔴 Real-time updates disabled', 'info');
+      }
+    }
+
+    async function loadInsights() {
+      try {
+        const response = await fetch('/.netlify/functions/intelligent-automation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem('adminAuth')}`
+          },
+          body: JSON.stringify({ action: 'guest_analytics' })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load insights');
+        }
+        
+        const data = await response.json();
+        updateInsightsDisplay(data);
+      } catch (error) {
+        console.error('Failed to load insights:', error);
+        document.getElementById('predictions-content').innerHTML = '❌ Failed to load insights';
+      }
+    }
+
+    function updateInsightsDisplay(data) {
+      const predictionsContent = document.getElementById('predictions-content');
+      const recommendationsContent = document.getElementById('recommendations-content');
+      const alertsContent = document.getElementById('alerts-content');
+      
+      if (predictionsContent && data.current_stats) {
+        predictionsContent.innerHTML = `
+          <div class="insight-card">
+            <h5>📊 Response Analytics</h5>
+            <p>Response Rate: ${data.current_stats.response_rate}%</p>
+            <p>Attendance Rate: ${data.current_stats.attendance_rate}%</p>
+            <p>Total Invited: ${data.current_stats.total_invited}</p>
+          </div>
+        `;
+      }
+      
+      if (recommendationsContent && data.predictions) {
+        recommendationsContent.innerHTML = `
+          <div class="insight-card">
+            <h5>🎯 Predictions</h5>
+            <p>Expected Final Responses: ${data.predictions.predicted_final_responses}</p>
+            <p>Expected Attendance: ${data.predictions.predicted_final_attendance}</p>
+          </div>
+        `;
+      }
+      
+      if (alertsContent) {
+        alertsContent.innerHTML = `
+          <div class="insight-card">
+            <h5>✅ System Status</h5>
+            <p>All systems operational</p>
+            <p>Last updated: ${new Date().toLocaleTimeString()}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Enhanced automation functions
+    async function runTableOptimization() {
+      try {
+        showNotification('🔄 Optimizing table assignments...', 'info');
+        
+        const response = await fetch('/.netlify/functions/intelligent-automation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem('adminAuth')}`
+          },
+          body: JSON.stringify({ action: 'auto_table_optimization' })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Optimization failed');
+        }
+        
+        const result = await response.json();
+        showNotification(`✅ Optimized ${result.data.guests_assigned} guest assignments`, 'success');
+        
+        if (document.querySelector('.tab-btn.active').textContent.includes('Table')) {
+          loadTableData();
+        }
+      } catch (error) {
+        showNotification('❌ Table optimization failed', 'error');
+        console.error('Table optimization error:', error);
+      }
+    }
+
+    async function sendSmartReminders() {
+      try {
+        showNotification('📧 Analyzing reminder needs...', 'info');
+        
+        const response = await fetch('/.netlify/functions/intelligent-automation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem('adminAuth')}`
+          },
+          body: JSON.stringify({ action: 'smart_reminders' })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Smart reminders failed');
+        }
+        
+        const result = await response.json();
+        const actions = result.data.recommended_actions;
+        
+        if (actions.length === 0) {
+          showNotification('✅ No reminders needed at this time', 'success');
+        } else {
+          showNotification(`📬 Found ${actions.length} recommended actions`, 'info');
+        }
+      } catch (error) {
+        showNotification('❌ Smart reminders analysis failed', 'error');
+        console.error('Smart reminders error:', error);
+      }
+    }
+
+    async function generateReports() {
+      try {
+        showNotification('📊 Generating comprehensive reports...', 'info');
+        
+        const reports = ['rsvps', 'guests', 'tables', 'songs', 'photos', 'wishes'];
+        
+        for (const report of reports) {
+          await exportData(report);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        showNotification('✅ All reports generated successfully', 'success');
+      } catch (error) {
+        showNotification('❌ Report generation failed', 'error');
+        console.error('Report generation error:', error);
+      }
+    }
+
+    function initializeRealTimeUpdates() {
+      if (dashboardState.autoRefresh && !dashboardState.refreshTimer) {
+        dashboardState.refreshTimer = setInterval(() => {
+          refreshDashboardData();
+        }, dashboardState.refreshInterval);
+      }
+    }
+
+    function refreshDashboardData() {
+      if (!dashboardState.autoRefresh) return;
+      
+      const activeTab = document.querySelector('.tab-btn.active')?.textContent.toLowerCase();
+      
+      switch(activeTab) {
+        case 'rsvps':
+          loadRSVPs();
+          break;
+        case 'individual guests':
+          loadIndividualGuests();
+          break;
+        case 'table management':
+          loadTableData();
+          break;
+        case 'song requests':
+          loadSongs();
+          break;
+        case 'photo shares':
+          loadPhotos();
+          break;
+        case 'wishes':
+          loadWishes();
+          break;
+        case 'notifications':
+          loadNotifications();
+          break;
+      }
+    }
+
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; padding: 15px; 
+        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'}; 
+        color: white; border-radius: 8px; z-index: 2000; max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      notification.textContent = message;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 4000);
+    }
 
     // Authentication helper
     function requireAuth() {

@@ -1992,6 +1992,317 @@ img, video, iframe {
 }
 
 /* ===============================
+   ENHANCED MODERN FEATURES
+   Cool, Classy & Automated Enhancements
+   =============================== */
+
+/* Advanced Shadows & Effects */
+:root {
+  --shadow-soft: 0 4px 20px rgba(200,169,81,0.15);
+  --shadow-hover: 0 12px 40px rgba(200,169,81,0.25);
+  --shadow-floating: 0 20px 60px rgba(0,0,0,0.08);
+  --glow-gold: 0 0 30px rgba(200,169,81,0.3);
+  
+  /* Elegant Transitions */
+  --transition-elegant: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Enhanced Header with Floating Elements */
+.header::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(200,169,81,0.08) 0%,
+    transparent 70%
+  );
+  animation: floatingOrb 20s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes floatingOrb {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Button Animations */
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-elegant);
+  transform: translateY(0);
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.3),
+    transparent
+  );
+  transition: var(--transition-smooth);
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.btn:active {
+  transform: translateY(-1px);
+  transition: var(--transition-quick);
+}
+
+/* Enhanced Card Hover Effects */
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(200,169,81,0.05) 0%,
+    transparent 50%,
+    rgba(212,165,116,0.05) 100%
+  );
+  opacity: 0;
+  transition: var(--transition-elegant);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-floating);
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced Title Effects */
+.enhanced-title {
+  background: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    #d4a574 50%,
+    var(--gold-dark) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 3s ease-in-out infinite;
+}
+
+@keyframes titleShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Interactive Photo Gallery Enhancements */
+.photo-item {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: var(--transition-elegant);
+  cursor: pointer;
+}
+
+.photo-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(200,169,81,0.2) 0%,
+    transparent 50%,
+    rgba(212,165,116,0.2) 100%
+  );
+  opacity: 0;
+  transition: var(--transition-elegant);
+  z-index: 2;
+}
+
+.photo-item:hover {
+  transform: scale(1.05) rotate(1deg);
+  box-shadow: var(--shadow-floating);
+}
+
+.photo-item:hover::before {
+  opacity: 1;
+}
+
+.photo-item img {
+  transition: var(--transition-elegant);
+}
+
+.photo-item:hover img {
+  transform: scale(1.1);
+}
+
+/* Enhanced Loading Animations */
+.elegant-loader {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+
+.elegant-loader::before,
+.elegant-loader::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--gold);
+  animation: elegantSpin 1.5s ease-in-out infinite;
+}
+
+.elegant-loader::after {
+  border-top-color: #d4a574;
+  animation-delay: 0.3s;
+  animation-direction: reverse;
+}
+
+@keyframes elegantSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Dashboard Control Styles */
+.dashboard-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.dashboard-controls .btn {
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  min-height: auto;
+}
+
+/* Insights Panel Styles */
+.insights-panel,
+.automation-panel {
+  font-family: Georgia, serif;
+}
+
+.panel-header {
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: var(--gold);
+}
+
+.insight-card {
+  background: var(--light);
+  padding: 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  border-left: 4px solid var(--gold);
+}
+
+.insight-card h5 {
+  margin: 0 0 8px 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.insight-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Notification Styles */
+.notification {
+  font-family: Georgia, serif;
+  box-shadow: var(--shadow);
+  border-radius: 8px;
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile Enhancements */
+@media (max-width: 768px) {
+  .card:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+  
+  .photo-item:hover {
+    transform: scale(1.02);
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+  
+  .dashboard-controls {
+    justify-content: center;
+  }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  .card:hover,
+  .btn:hover,
+  .photo-item:hover {
+    transform: none;
+  }
+  
+  .header::after {
+    animation: none;
+  }
+}
+
+/* Focus indicators */
+.btn:focus {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ===============================
    Responsive Design
    =============================== */
 @media (max-width: 720px) {

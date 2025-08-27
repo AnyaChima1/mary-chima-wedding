@@ -2185,3 +2185,246 @@ window.addEventListener('scroll', () => {
 
 console.log('🎉 Enhanced wedding site loaded with dynamic features!');
 console.log('💕 Features: Floating hearts, particles, enhanced animations, scroll effects, and more!');
+
+// ========================================
+// ENHANCED MODERN FEATURES
+// Cool, Classy & Automated Enhancements
+// ========================================
+
+// QR Code Features for Enhanced Guest Experience
+function generateQRCode(data, size = 150) {
+  const qrText = encodeURIComponent(data);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${qrText}`;
+}
+
+function createQRModal(title, qrData, description) {
+  const modal = document.createElement('div');
+  modal.className = 'qr-modal';
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  `;
+  
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: white; border-radius: 16px; padding: 30px;
+    text-align: center; max-width: 400px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  `;
+  
+  content.innerHTML = `
+    <h3 style="margin: 0 0 20px 0; color: #c8a951;">${title}</h3>
+    <img src="${generateQRCode(qrData, 200)}" alt="QR Code" style="width: 200px; height: 200px; margin: 20px 0;" />
+    <p style="margin: 20px 0; color: #666; line-height: 1.6;">${description}</p>
+    <button onclick="closeQRModal()" class="btn btn--primary" style="margin-top: 20px;">Close</button>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeQRModal();
+  });
+}
+
+function closeQRModal() {
+  const modal = document.querySelector('.qr-modal');
+  if (modal) modal.remove();
+}
+
+// Add QR code buttons to relevant sections
+function addQRCodeFeatures() {
+  // Add QR for RSVP
+  const rsvpSection = document.querySelector('#rsvp');
+  if (rsvpSection) {
+    const qrButton = document.createElement('button');
+    qrButton.className = 'btn btn--ghost';
+    qrButton.innerHTML = '📱 QR Code';
+    qrButton.onclick = () => {
+      createQRModal(
+        'RSVP QR Code',
+        window.location.href + '#rsvp',
+        'Scan this QR code with your phone to quickly access the RSVP form!'
+      );
+    };
+    
+    const actions = rsvpSection.querySelector('.actions');
+    if (actions) actions.appendChild(qrButton);
+  }
+  
+  // Add QR for Photo Sharing
+  const photosSection = document.querySelector('#photos');
+  if (photosSection) {
+    const qrButton = document.createElement('button');
+    qrButton.className = 'btn btn--ghost';
+    qrButton.innerHTML = '📱 Share Photos';
+    qrButton.onclick = () => {
+      createQRModal(
+        'Photo Sharing QR Code',
+        window.location.href + '#photos',
+        'Share this QR code so guests can quickly upload photos during the celebration!'
+      );
+    };
+    
+    const actions = photosSection.querySelector('.actions');
+    if (actions) actions.appendChild(qrButton);
+  }
+}
+
+// Enhanced photo gallery with modern features
+function enhancePhotoGallery() {
+  const galleryGrid = document.getElementById('gallery-grid');
+  if (!galleryGrid) return;
+  
+  // Add enhanced photo item styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .gallery-item {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      cursor: pointer;
+      background: #f5f5f5;
+    }
+    
+    .gallery-item:hover {
+      transform: scale(1.05) rotate(1deg);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+    }
+    
+    .gallery-item img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      transition: all 0.4s ease;
+    }
+    
+    .gallery-item:hover img {
+      transform: scale(1.1);
+    }
+    
+    .gallery-item-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        45deg,
+        rgba(200,169,81,0.2) 0%,
+        transparent 50%,
+        rgba(212,165,116,0.2) 100%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .gallery-item:hover .gallery-item-overlay {
+      opacity: 1;
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+// Add floating particles effect
+function createFloatingParticles() {
+  setInterval(() => {
+    if (Math.random() < 0.1) { // 10% chance every interval
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.cssText = `
+        position: fixed;
+        left: ${Math.random() * 100}vw;
+        top: 100vh;
+        width: ${2 + Math.random() * 4}px;
+        height: ${2 + Math.random() * 4}px;
+        background: rgba(200,169,81,${0.3 + Math.random() * 0.4});
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 1;
+        animation: particleFloat ${8 + Math.random() * 4}s linear forwards;
+        --random-x: ${(Math.random() - 0.5) * 200}px;
+      `;
+      
+      document.body.appendChild(particle);
+      
+      setTimeout(() => {
+        if (particle.parentNode) {
+          particle.parentNode.removeChild(particle);
+        }
+      }, 12000);
+    }
+  }, 2000);
+}
+
+// Enhanced interactive elements
+function addAdvancedInteractions() {
+  // Enhanced button effects with shimmer
+  document.querySelectorAll('.btn--primary').forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      this.style.boxShadow = '0 12px 40px rgba(200,169,81,0.25)';
+      this.style.transform = 'translateY(-3px) scale(1.02)';
+      
+      if (!this.querySelector('.shimmer')) {
+        const shimmer = document.createElement('div');
+        shimmer.className = 'shimmer';
+        shimmer.style.cssText = `
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          animation: shimmerSweep 1.5s ease-in-out infinite;
+          pointer-events: none;
+        `;
+        this.appendChild(shimmer);
+      }
+    });
+    
+    btn.addEventListener('mouseleave', function() {
+      this.style.boxShadow = '';
+      this.style.transform = '';
+      const shimmer = this.querySelector('.shimmer');
+      if (shimmer) shimmer.remove();
+    });
+  });
+  
+  // Add shimmer animation
+  const shimmerStyle = document.createElement('style');
+  shimmerStyle.textContent = `
+    @keyframes shimmerSweep {
+      0% { transform: translateX(-100%) skewX(-15deg); }
+      100% { transform: translateX(200%) skewX(-15deg); }
+    }
+  `;
+  document.head.appendChild(shimmerStyle);
+}
+
+// Initialize enhanced features
+function initializeEnhancedFeatures() {
+  addQRCodeFeatures();
+  enhancePhotoGallery();
+  createFloatingParticles();
+  addAdvancedInteractions();
+  
+  // Add enhanced title effect to main heading
+  const mainTitle = document.querySelector('.header__title');
+  if (mainTitle) {
+    mainTitle.classList.add('enhanced-title');
+  }
+  
+  console.log('🎆 Enhanced wedding features initialized!');
+  console.log('🔥 Features: QR codes, enhanced gallery, floating particles, advanced interactions!');
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeEnhancedFeatures);
+} else {
+  initializeEnhancedFeatures();
+}
