@@ -21,84 +21,95 @@ function hideRestrictedSections() {
       }
     });
     
-    // Show a message instead
-    showAccessRestrictedMessage();
+    // Show a message in the header instead of the RSVP button
+    showAccessRestrictedMessageInHeader();
   }
 }
 
-// Show access restricted message
-function showAccessRestrictedMessage() {
+// Show access restricted message in the header
+function showAccessRestrictedMessageInHeader() {
   // Check if message already exists
-  if (document.getElementById('access-restricted-message')) {
+  if (document.getElementById('access-restricted-message-header')) {
     return;
   }
   
-  const message = document.createElement('div');
-  message.id = 'access-restricted-message';
-  message.innerHTML = '<div></div>'; // Create a placeholder
+  // Remove the existing RSVP button
+  const rsvpButton = document.getElementById('rsvp-hero-btn');
+  if (rsvpButton) {
+    rsvpButton.style.display = 'none';
+  }
   
-  // Set styles using JavaScript to avoid CSS conflicts
-  Object.assign(message.style, {
-    background: 'linear-gradient(135deg, #fafafa 0%, #f8f6f0 100%)',
-    border: '2px solid #c8a951',
-    borderRadius: '16px',
-    padding: '40px 20px',
-    textAlign: 'center',
-    margin: '40px auto',
-    maxWidth: '600px',
-    boxShadow: '0 8px 32px rgba(0,0,0,.06)'
-  });
-  
-  // Create content using DOM methods instead of innerHTML with special characters
-  const iconDiv = document.createElement('div');
-  iconDiv.textContent = '🔒';
-  iconDiv.style.fontSize = '3rem';
-  iconDiv.style.marginBottom = '20px';
-  
-  const title = document.createElement('h2');
-  title.textContent = 'Private Wedding Information';
-  Object.assign(title.style, {
-    color: '#c8a951',
-    marginBottom: '15px'
-  });
-  
-  const text = document.createElement('p');
-  text.innerHTML = 'This content is only available to confirmed guests.<br>Please RSVP as attending to access the full wedding information.';
-  Object.assign(text.style, {
-    fontSize: '1.1rem',
-    lineHeight: '1.6',
-    color: '#333',
-    marginBottom: '25px'
-  });
-  
-  const button = document.createElement('button');
-  button.textContent = 'RSVP Now to Access';
-  Object.assign(button.style, {
-    fontSize: '1.1rem',
-    padding: '12px 30px',
-    background: '#c8a951',
-    color: 'white',
-    border: 'none',
-    borderRadius: '24px',
-    cursor: 'pointer',
-    fontWeight: '500'
-  });
-  
-  button.addEventListener('click', function() {
-    document.getElementById('rsvp-modal').classList.add('is-open');
-    document.body.style.overflow = 'hidden';
-  });
-  
-  // Assemble the message
-  message.appendChild(iconDiv);
-  message.appendChild(title);
-  message.appendChild(text);
-  message.appendChild(button);
-  
-  // Insert the message before the footer
-  const footer = document.querySelector('.footer');
-  if (footer) {
-    footer.parentNode.insertBefore(message, footer);
+  // Create the access restricted message in the header
+  const headerContent = document.querySelector('.header__content .container');
+  if (headerContent) {
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'access-restricted-message-header';
+    
+    // Set styles using JavaScript
+    Object.assign(messageDiv.style, {
+      background: 'linear-gradient(135deg, #fafafa 0%, #f8f6f0 100%)',
+      border: '2px solid #c8a951',
+      borderRadius: '16px',
+      padding: '30px 20px',
+      textAlign: 'center',
+      margin: '30px auto',
+      maxWidth: '600px',
+      boxShadow: '0 8px 32px rgba(0,0,0,.06)'
+    });
+    
+    // Create content
+    const title = document.createElement('h2');
+    title.textContent = 'Private Wedding Information';
+    Object.assign(title.style, {
+      color: '#c8a951',
+      marginBottom: '15px',
+      fontSize: '1.8rem'
+    });
+    
+    const text = document.createElement('p');
+    text.textContent = 'This content is only available to confirmed guests.';
+    Object.assign(text.style, {
+      fontSize: '1.1rem',
+      lineHeight: '1.6',
+      color: '#333',
+      marginBottom: '15px'
+    });
+    
+    const subtext = document.createElement('p');
+    subtext.textContent = 'Please RSVP as attending to access the full wedding information.';
+    Object.assign(subtext.style, {
+      fontSize: '1.1rem',
+      lineHeight: '1.6',
+      color: '#333',
+      marginBottom: '25px'
+    });
+    
+    const button = document.createElement('button');
+    button.textContent = 'RSVP Now to Access';
+    Object.assign(button.style, {
+      fontSize: '1.1rem',
+      padding: '12px 30px',
+      background: '#c8a951',
+      color: 'white',
+      border: 'none',
+      borderRadius: '24px',
+      cursor: 'pointer',
+      fontWeight: '500'
+    });
+    
+    button.addEventListener('click', function() {
+      document.getElementById('rsvp-modal').classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    });
+    
+    // Assemble the message
+    messageDiv.appendChild(title);
+    messageDiv.appendChild(text);
+    messageDiv.appendChild(subtext);
+    messageDiv.appendChild(button);
+    
+    // Insert the message in the header content
+    headerContent.appendChild(messageDiv);
   }
 }
 
@@ -112,10 +123,16 @@ function showRestrictedSections() {
     }
   });
   
-  // Remove the access restricted message if it exists
-  const message = document.getElementById('access-restricted-message');
-  if (message) {
-    message.remove();
+  // Remove the access restricted message from header if it exists
+  const headerMessage = document.getElementById('access-restricted-message-header');
+  if (headerMessage) {
+    headerMessage.remove();
+  }
+  
+  // Show the original RSVP button
+  const rsvpButton = document.getElementById('rsvp-hero-btn');
+  if (rsvpButton) {
+    rsvpButton.style.display = 'inline-block';
   }
 }
 
