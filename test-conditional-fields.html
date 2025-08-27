@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Conditional Fields</title>
+    <style>
+        .form-group { margin: 10px 0; }
+        #guest-count-group, #guest-names-group, #dietary-group { 
+            display: none; 
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        #guest-count-group.visible, #guest-names-group.visible, #dietary-group.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Conditional Fields</h1>
+    
+    <form>
+        <div class="form-group">
+            <label for="attendance">Will you be attending?</label>
+            <select id="attendance" name="attendance" required>
+                <option value="">Please select...</option>
+                <option value="yes">Yes, I'll be there! 🎉</option>
+                <option value="no">Sorry, I can't make it 😔</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="guest-count-group">
+            <label for="guest-count">Number of Guests (including yourself)</label>
+            <select id="guest-count" name="guest_count">
+                <option value="1">Just me</option>
+                <option value="2">2 people</option>
+                <option value="3">3 people</option>
+                <option value="4">4 people</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="guest-names-group">
+            <label for="guest-names">Names of Additional Guests</label>
+            <textarea id="guest-names" name="guest_names" placeholder="Please list the names of your additional guests..." rows="3"></textarea>
+        </div>
+        
+        <div class="form-group" id="dietary-group">
+            <label for="dietary">Dietary Requirements</label>
+            <textarea id="dietary" name="dietary" placeholder="Any allergies, dietary restrictions, or special requirements..." rows="3"></textarea>
+        </div>
+    </form>
+
+    <div id="debug-info"></div>
+
+    <script>
+        const attendanceSelect = document.getElementById('attendance');
+        const guestCountGroup = document.getElementById('guest-count-group');
+        const guestNamesGroup = document.getElementById('guest-names-group');
+        const dietaryGroup = document.getElementById('dietary-group');
+        const guestCountSelect = document.getElementById('guest-count');
+        const debugInfo = document.getElementById('debug-info');
+
+        // Debug function to log messages
+        function debugLog(message) {
+            console.log(message);
+            debugInfo.innerHTML += `<p>${message}</p>`;
+        }
+
+        // Handle conditional form fields
+        function toggleConditionalFields() {
+            debugLog('toggleConditionalFields called');
+            const attendance = attendanceSelect.value;
+            debugLog('Attendance value: ' + attendance);
+            
+            if (attendance === 'yes') {
+                debugLog('Showing conditional fields');
+                guestCountGroup.style.display = 'block';
+                dietaryGroup.style.display = 'block';
+                toggleGuestNamesField();
+            } else {
+                debugLog('Hiding conditional fields');
+                guestCountGroup.style.display = 'none';
+                guestNamesGroup.style.display = 'none';
+                dietaryGroup.style.display = 'none';
+            }
+        }
+
+        function toggleGuestNamesField() {
+            debugLog('toggleGuestNamesField called');
+            const guestCount = parseInt(guestCountSelect.value);
+            debugLog('Guest count: ' + guestCount);
+            
+            if (guestCount > 1) {
+                debugLog('Showing guest names field');
+                guestNamesGroup.style.display = 'block';
+                document.getElementById('guest-names').required = true;
+            } else {
+                debugLog('Hiding guest names field');
+                guestNamesGroup.style.display = 'none';
+                document.getElementById('guest-names').required = false;
+            }
+        }
+
+        // Set up event listeners
+        debugLog('Setting up event listeners');
+        attendanceSelect.addEventListener('change', toggleConditionalFields);
+        guestCountSelect.addEventListener('change', toggleGuestNamesField);
+
+        // Initialize conditional fields
+        debugLog('Initializing conditional fields');
+        toggleConditionalFields();
+    </script>
+</body>
+</html>

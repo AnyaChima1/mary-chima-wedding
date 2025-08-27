@@ -384,6 +384,20 @@ const dietaryGroup = document.getElementById('dietary-group');
 const guestCountSelect = document.getElementById('guest-count');
 const rsvpSuccess = document.getElementById('rsvp-success');
 
+// Debug logging for element existence
+console.log('RSVP Elements:', {
+  rsvpHeroBtn: !!rsvpHeroBtn,
+  modalCloseBtn: !!modalCloseBtn,
+  modalCloseBtns: modalCloseBtns ? modalCloseBtns.length : 0,
+  rsvpForm: !!rsvpForm,
+  attendanceSelect: !!attendanceSelect,
+  guestCountGroup: !!guestCountGroup,
+  guestNamesGroup: !!guestNamesGroup,
+  dietaryGroup: !!dietaryGroup,
+  guestCountSelect: !!guestCountSelect,
+  rsvpSuccess: !!rsvpSuccess
+});
+
 // Open modal
 function openRSVPModal() {
   rsvpModal.classList.add('is-open');
@@ -439,13 +453,17 @@ document.addEventListener('keydown', (e) => {
 
 // Handle conditional form fields
 function toggleConditionalFields() {
+  console.log('toggleConditionalFields called');
   const attendance = attendanceSelect.value;
+  console.log('Attendance value:', attendance);
   
   if (attendance === 'yes') {
+    console.log('Showing conditional fields');
     guestCountGroup.style.display = 'flex';
     dietaryGroup.style.display = 'flex';
     toggleGuestNamesField();
   } else {
+    console.log('Hiding conditional fields');
     guestCountGroup.style.display = 'none';
     guestNamesGroup.style.display = 'none';
     dietaryGroup.style.display = 'none';
@@ -453,19 +471,66 @@ function toggleConditionalFields() {
 }
 
 function toggleGuestNamesField() {
+  console.log('toggleGuestNamesField called');
   const guestCount = parseInt(guestCountSelect.value);
+  console.log('Guest count:', guestCount);
   
   if (guestCount > 1) {
+    console.log('Showing guest names field');
     guestNamesGroup.style.display = 'flex';
     document.getElementById('guest-names').required = true;
   } else {
+    console.log('Hiding guest names field');
     guestNamesGroup.style.display = 'none';
     document.getElementById('guest-names').required = false;
   }
 }
 
-attendanceSelect?.addEventListener('change', toggleConditionalFields);
-guestCountSelect?.addEventListener('change', toggleGuestNamesField);
+// Add more robust event listener attachment
+function setupConditionalFieldListeners() {
+  console.log('Setting up conditional field listeners');
+  
+  // Ensure elements exist before attaching listeners
+  if (attendanceSelect) {
+    // Remove any existing listeners to prevent duplicates
+    attendanceSelect.removeEventListener('change', toggleConditionalFields);
+    attendanceSelect.addEventListener('change', toggleConditionalFields);
+    console.log('Attendance select change listener attached');
+  }
+  
+  if (guestCountSelect) {
+    // Remove any existing listeners to prevent duplicates
+    guestCountSelect.removeEventListener('change', toggleGuestNamesField);
+    guestCountSelect.addEventListener('change', toggleGuestNamesField);
+    console.log('Guest count select change listener attached');
+  }
+  
+  // Initialize conditional fields
+  if (typeof toggleConditionalFields === 'function') {
+    console.log('Initializing conditional fields');
+    toggleConditionalFields();
+  }
+}
+
+// Also set up listeners when the modal is opened, in case there were timing issues
+const originalOpenRSVPModal = window.openRSVPModal || function() {};
+window.openRSVPModal = function() {
+  // Call the original function
+  originalOpenRSVPModal();
+  
+  // Set up conditional field listeners again when modal opens
+  setTimeout(() => {
+    setupConditionalFieldListeners();
+  }, 100);
+};
+
+// Set up event listeners when DOM is loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupConditionalFieldListeners);
+} else {
+  // DOM is already loaded
+  setupConditionalFieldListeners();
+}
 
 // Form submission handling with Netlify Functions
 rsvpForm?.addEventListener('submit', async (e) => {
@@ -614,9 +679,6 @@ function clearFieldError(e) {
 
 // Initialize form validation
 addFormValidation();
-
-// Initialize conditional fields
-toggleConditionalFields();
 
 console.log('🎉 RSVP Modal functionality loaded!');
 
@@ -966,20 +1028,7 @@ function enhanceRSVPSubmission() {
   }
 }
 
-// Initialize access restriction on page load
-document.addEventListener('DOMContentLoaded', function() {
-  // Enhance RSVP submission with access control
-  enhanceRSVPSubmission();
-  
-  // Check if user has already RSVP'd as attending
-  if (hasRSVPdAsAttending()) {
-    // Show all sections if they've already RSVP'd
-    showRestrictedSections();
-  } else {
-    // Hide restricted sections for new visitors
-    hideRestrictedSections();
-  }
-});
+
 
 // ========================================
 // ENHANCED DEBUGGING AND ERROR LOGGING SYSTEM

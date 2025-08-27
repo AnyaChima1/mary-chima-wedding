@@ -12,8 +12,8 @@ function hasRSVPdAsAttending() {
 function hideRestrictedSections() {
   // Only hide sections if user hasn't RSVP'd as attending
   if (!hasRSVPdAsAttending()) {
-    // Hide the restricted sections
-    const restrictedSections = ['story', 'details', 'rsvp', 'calendar', 'photos'];
+    // Hide the restricted sections (excluding RSVP section since it contains the form)
+    const restrictedSections = ['story', 'details', 'calendar', 'photos'];
     restrictedSections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) {
@@ -115,7 +115,7 @@ function showAccessRestrictedMessageInHeader() {
 
 // Show restricted sections after successful RSVP
 function showRestrictedSections() {
-  const restrictedSections = ['story', 'details', 'rsvp', 'calendar', 'photos'];
+  const restrictedSections = ['story', 'details', 'calendar', 'photos'];
   restrictedSections.forEach(sectionId => {
     const section = document.getElementById(sectionId);
     if (section) {
