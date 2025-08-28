@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mary &amp; Chima — Wedding Reception</title>
   <meta name="description" content="Mary & Chima Wedding Reception — 4 October 2025 — Golden Hall, Tallinn" />
+  <meta name="keywords" content="Mary Chima, wedding, reception, Tallinn, Estonia, RSVP, celebration" />
+  <meta name="author" content="Mary & Chima" />
+  <meta property="og:title" content="Mary & Chima Wedding Reception" />
+  <meta property="og:description" content="Join us for our special day on 4 October 2025 in Tallinn, Estonia" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://maryandchima.love" />
+  <meta property="og:image" content="https://maryandchima.love/assets/monogram_favicon_mary_chima.png" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Mary & Chima Wedding Reception" />
+  <meta name="twitter:description" content="Join us for our special day on 4 October 2025 in Tallinn, Estonia" />
+  <meta name="twitter:image" content="https://maryandchima.love/assets/monogram_favicon_mary_chima.png" />
   <link rel="icon" href="assets/monogram_favicon_mary_chima.png" type="image/png" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -15,13 +27,13 @@
     <div class="navbar">
       <div class="container">
         <a href="#home" class="brand">
-          <img src="assets/monogram_favicon_mary_chima.png" alt="Monogram" />
+          <img src="assets/monogram_favicon_mary_chima.png" alt="Monogram" loading="lazy" decoding="async" />
           <span>Mary &amp; Chima</span>
         </a>
 
-        <button class="nav__toggle" aria-controls="site-nav" aria-expanded="false" aria-label="Toggle menu">☰</button>
+        <button class="nav__toggle" aria-controls="site-nav" aria-expanded="false" aria-label="Toggle menu" tabindex="0">☰</button>
 
-        <nav id="site-nav" class="nav" aria-label="Primary">
+        <nav id="site-nav" class="nav" aria-label="Primary" tabindex="-1">
           <a href="#story">Our Story</a>
           <a href="#details">The Day</a>
           <a href="#rsvp">RSVP</a>
@@ -274,7 +286,7 @@
 
   <div class="qr-grid">
     <figure class="qr-card">
-      <img src="assets/qr_google.png" alt="QR: Add to Google Calendar" />
+      <img src="assets/qr_google.png" alt="QR: Add to Google Calendar" loading="lazy" decoding="async" />
       <figcaption>Add to Google Calendar</figcaption>
     </figure>
   </div>
@@ -445,7 +457,7 @@
 
   <footer class="footer">
     <div class="container footer__inner">
-      <img src="assets/monogram_favicon_mary_chima.png" alt="Mary &amp; Chima monogram" />
+      <img src="assets/monogram_favicon_mary_chima.png" alt="Mary &amp; Chima monogram" loading="lazy" decoding="async" />
       <p>Mary &amp; Chima • Tallinn • 4 Oct 2025</p>
     </div>
   </footer>
@@ -456,7 +468,7 @@
     <div class="modal__content">
       <div class="modal__header">
         <h2 id="wishes-modal-title">Leave Your Wishes</h2>
-        <button class="modal__close" aria-label="Close wishes form">&times;</button>
+        <button class="modal__close" aria-label="Close wishes form" tabindex="0">&times;</button>
       </div>
       
       <div class="modal__body">
@@ -525,7 +537,7 @@
       <div id="share-tab" class="tab-content active">
         <div class="modal__header">
           <h2 id="photo-modal-title">Share Your Photos</h2>
-          <button class="modal__close" aria-label="Close photo sharing form">&times;</button>
+          <button class="modal__close" aria-label="Close photo sharing form" tabindex="0">&times;</button>
         </div>
         
         <div class="modal__body">
@@ -632,7 +644,7 @@
       <div id="gallery-tab" class="tab-content">
         <div class="modal__header">
           <h2>Wedding Photo Gallery</h2>
-          <button class="modal__close" aria-label="Close gallery">&times;</button>
+          <button class="modal__close" aria-label="Close gallery" tabindex="0">&times;</button>
         </div>
         
         <div class="modal__body">
@@ -669,7 +681,7 @@
       <button class="lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
       <button class="lightbox-next" onclick="navigateLightbox(1)">›</button>
       <div class="lightbox-media">
-        <img id="lightbox-image" src="" alt="Gallery image" style="display: none;">
+        <img id="lightbox-image" src="" alt="Gallery image" style="display: none;" loading="lazy" decoding="async">
         <video id="lightbox-video" controls style="display: none;"></video>
       </div>
       <div class="lightbox-info">
@@ -689,7 +701,7 @@
     <div class="modal__content">
       <div class="modal__header">
         <h2 id="song-modal-title">Request a Song</h2>
-        <button class="modal__close" aria-label="Close song request form">&times;</button>
+        <button class="modal__close" aria-label="Close song request form" tabindex="0">&times;</button>
       </div>
       
       <div class="modal__body">
@@ -759,7 +771,7 @@
     <div class="modal__content">
       <div class="modal__header">
         <h2 id="modal-title">RSVP for Our Wedding</h2>
-        <button class="modal__close" aria-label="Close RSVP form">&times;</button>
+        <button class="modal__close" aria-label="Close RSVP form" tabindex="0">&times;</button>
       </div>
       
       <div class="modal__body">
@@ -828,6 +840,12 @@
     </div>
   </div>
 
+  <script>
+    // Browser compatibility check
+    if (!window.fetch || !window.Promise || !window.addEventListener) {
+      document.body.innerHTML = '<div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;"><h2>Browser Not Supported</h2><p>Please upgrade to a modern browser (Chrome, Firefox, Safari, Edge) to view this website.</p></div>';
+    }
+  </script>
   <script src="script.js"></script>
   <script src="access-control.js"></script>
   <script>

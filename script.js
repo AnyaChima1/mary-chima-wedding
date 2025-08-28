@@ -8,13 +8,11 @@
     
     const el = document.getElementById('countdown');
     if (!el) {
-      console.log('Countdown element not ready, retrying...');
       setTimeout(startCountdown, 100);
       return;
     }
     
     countdownInitialized = true;
-    console.log('Starting countdown timer...');
     
     let previousValues = {};
     
@@ -86,7 +84,6 @@
       });
       
       previousValues = { ...currentValues };
-      console.log('Countdown updated:', currentValues);
     }
     
     // Initial render and setup interval
@@ -109,7 +106,6 @@
 setTimeout(function() {
   const el = document.getElementById('countdown');
   if (el && !el.innerHTML.trim()) {
-    console.log('Emergency countdown activation...');
     const now = Date.now();
     const target = new Date('2025-10-04T17:00:00+03:00').getTime();
     let diff = Math.max(0, target - now);
@@ -196,19 +192,34 @@ document.querySelectorAll('.section').forEach(section => {
   observer.observe(section);
 });
 
-// Parallax effect for hero watermark
-window.addEventListener('scroll', () => {
+// Debounce function for scroll events
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Parallax effect for hero watermark with debouncing
+const handleScroll = debounce(() => {
   const scrolled = window.pageYOffset;
   const rate = scrolled * -0.5;
   const heroWatermark = document.querySelector('.header::before');
   if (heroWatermark) {
     heroWatermark.style.transform = `translateX(-50%) translateY(${rate}px)`;
   }
-});
+}, 10);
 
-// Interactive card tilt effect
+window.addEventListener('scroll', handleScroll);
+
+// Interactive card tilt effect with debouncing
 document.querySelectorAll('.card').forEach(card => {
-  card.addEventListener('mousemove', (e) => {
+  const handleMouseMove = debounce((e) => {
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -220,7 +231,9 @@ document.querySelectorAll('.card').forEach(card => {
     const rotateY = (centerX - x) / 10;
     
     card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale(1.02)`;
-  });
+  }, 10);
+  
+  card.addEventListener('mousemove', handleMouseMove);
   
   card.addEventListener('mouseleave', () => {
     card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
@@ -385,18 +398,7 @@ const guestCountSelect = document.getElementById('guest-count');
 const rsvpSuccess = document.getElementById('rsvp-success');
 
 // Debug logging for element existence
-console.log('RSVP Elements:', {
-  rsvpHeroBtn: !!rsvpHeroBtn,
-  modalCloseBtn: !!modalCloseBtn,
-  modalCloseBtns: modalCloseBtns ? modalCloseBtns.length : 0,
-  rsvpForm: !!rsvpForm,
-  attendanceSelect: !!attendanceSelect,
-  guestCountGroup: !!guestCountGroup,
-  guestNamesGroup: !!guestNamesGroup,
-  dietaryGroup: !!dietaryGroup,
-  guestCountSelect: !!guestCountSelect,
-  rsvpSuccess: !!rsvpSuccess
-});
+
 
 // Open modal
 function openRSVPModal() {
@@ -418,6 +420,12 @@ function closeRSVPModal() {
   rsvpModal.classList.remove('is-open');
   rsvpModal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
+  
+  // Return focus to the button that opened the modal
+  const openButton = document.getElementById('rsvp-hero-btn');
+  if (openButton) {
+    openButton.focus();
+  }
   
   // Reset form after a delay
   setTimeout(() => {
@@ -453,17 +461,13 @@ document.addEventListener('keydown', (e) => {
 
 // Handle conditional form fields
 function toggleConditionalFields() {
-  console.log('toggleConditionalFields called');
   const attendance = attendanceSelect.value;
-  console.log('Attendance value:', attendance);
   
   if (attendance === 'yes') {
-    console.log('Showing conditional fields');
     guestCountGroup.style.display = 'flex';
     dietaryGroup.style.display = 'flex';
     toggleGuestNamesField();
   } else {
-    console.log('Hiding conditional fields');
     guestCountGroup.style.display = 'none';
     guestNamesGroup.style.display = 'none';
     dietaryGroup.style.display = 'none';
@@ -471,16 +475,12 @@ function toggleConditionalFields() {
 }
 
 function toggleGuestNamesField() {
-  console.log('toggleGuestNamesField called');
   const guestCount = parseInt(guestCountSelect.value);
-  console.log('Guest count:', guestCount);
   
   if (guestCount > 1) {
-    console.log('Showing guest names field');
     guestNamesGroup.style.display = 'flex';
     document.getElementById('guest-names').required = true;
   } else {
-    console.log('Hiding guest names field');
     guestNamesGroup.style.display = 'none';
     document.getElementById('guest-names').required = false;
   }
@@ -488,26 +488,21 @@ function toggleGuestNamesField() {
 
 // Add more robust event listener attachment
 function setupConditionalFieldListeners() {
-  console.log('Setting up conditional field listeners');
-  
   // Ensure elements exist before attaching listeners
   if (attendanceSelect) {
     // Remove any existing listeners to prevent duplicates
     attendanceSelect.removeEventListener('change', toggleConditionalFields);
     attendanceSelect.addEventListener('change', toggleConditionalFields);
-    console.log('Attendance select change listener attached');
   }
   
   if (guestCountSelect) {
     // Remove any existing listeners to prevent duplicates
     guestCountSelect.removeEventListener('change', toggleGuestNamesField);
     guestCountSelect.addEventListener('change', toggleGuestNamesField);
-    console.log('Guest count select change listener attached');
   }
   
   // Initialize conditional fields
   if (typeof toggleConditionalFields === 'function') {
-    console.log('Initializing conditional fields');
     toggleConditionalFields();
   }
 }
@@ -608,11 +603,8 @@ rsvpForm?.addEventListener('submit', async (e) => {
     // Create celebration effect
     createCelebration(rsvpSuccess);
     
-    console.log('RSVP Submitted Successfully:', result);
     
   } catch (error) {
-    console.error('RSVP submission error:', error);
-    
     // Show user-friendly error message
     let errorMessage = 'Sorry, there was an error submitting your RSVP. Please try again.';
     
@@ -700,7 +692,7 @@ function clearFieldError(e) {
 // Initialize form validation
 addFormValidation();
 
-console.log('🎉 RSVP Modal functionality loaded!');
+
 
 // ========================================
 // SONG REQUEST MODAL FUNCTIONALITY
@@ -727,6 +719,12 @@ function closeSongModal() {
   songModal.classList.remove('is-open');
   songModal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
+  
+  // Return focus to the card that opened the modal
+  const openCard = document.querySelector('.card--song');
+  if (openCard) {
+    openCard.focus();
+  }
   
   setTimeout(() => {
     songForm.reset();
@@ -772,8 +770,7 @@ songForm?.addEventListener('submit', async (e) => {
     createCelebration(songSuccess);
     
   } catch (error) {
-    console.error('Song submission error:', error);
-    alert('Sorry, there was an error submitting your song request. Please try again.');
+    showNotification('Sorry, there was an error submitting your song request. Please try again.', 'error');
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -1015,11 +1012,9 @@ function enhanceRSVPSubmission() {
           localStorage.removeItem('weddingRSVPStatus');
         }
         
-        console.log('RSVP Submitted Successfully:', result);
+
         
       } catch (error) {
-        console.error('RSVP submission error:', error);
-        
         // Show user-friendly error message
         let errorMessage = 'Sorry, there was an error submitting your RSVP. Please try again.';
         
@@ -1100,16 +1095,16 @@ const ErrorLogger = {
     const consoleMessage = `[${timestamp}] ${stage}: ${message}`;
     switch(type) {
       case 'error':
-        console.error(consoleMessage, data);
+        // Removed for production
         break;
       case 'warning':
-        console.warn(consoleMessage, data);
+        // Removed for production
         break;
       case 'debug':
-        console.log(consoleMessage, data);
+
         break;
       default:
-        console.info(consoleMessage, data);
+        // Removed for production
     }
   },
   
@@ -1313,7 +1308,7 @@ function updateDebugStats() {
 // Download debug logs
 function downloadDebugLogs() {
   if (ErrorLogger.logs.length === 0) {
-    alert('No debug logs to download. Try performing an action that causes an error first.');
+    showNotification('No debug logs to download. Try performing an action that causes an error first.', 'warning');
     return;
   }
   
@@ -1347,7 +1342,7 @@ function downloadDebugLogs() {
 function clearDebugLogs() {
   ErrorLogger.logs = [];
   updateDebugStats();
-  alert('Debug logs cleared.');
+  showNotification('Debug logs cleared.', 'success');
 }
 
 // Override the original log function to trigger console display
@@ -1417,7 +1412,7 @@ function switchPhotoTab(tab) {
 function selectUploadMethod(method) {
   currentUploadMethod = method;
   
-  console.log('Switching upload method to:', method);
+
   
   // Update method option styling
   document.querySelectorAll('.method-option').forEach(option => option.classList.remove('active'));
@@ -1601,7 +1596,6 @@ async function loadGallery() {
       `;
     }
   } catch (error) {
-    console.error('Error loading gallery:', error);
     galleryGrid.innerHTML = '<div class="gallery-loading">Error loading photos. Please try again.</div>';
   }
 }
@@ -1622,21 +1616,27 @@ function displayGallery(photos) {
   }
   
   galleryGrid.innerHTML = photos.map((photo, index) => {
+    // Sanitize user-provided data
+    const sanitizedName = sanitizeInput(photo.name);
+    const sanitizedDescription = sanitizeInput(photo.description);
+    const sanitizedCategory = sanitizeInput(photo.category);
+    const sanitizedPhotoUrl = sanitizeInput(photo.photo_url);
+    
     // Determine if it's a video based on file type or URL
     const isVideo = (photo.file_type && photo.file_type.startsWith('video/')) || 
-                   photo.photo_url.includes('.mp4') || 
-                   photo.photo_url.includes('.mov') || 
-                   photo.photo_url.includes('video');
+                   sanitizedPhotoUrl.includes('.mp4') || 
+                   sanitizedPhotoUrl.includes('.mov') || 
+                   sanitizedPhotoUrl.includes('video');
     
     // Handle different types of photo URLs
-    let photoSrc = photo.photo_url;
+    let photoSrc = sanitizedPhotoUrl;
     let imageElement = '';
     
     if (isVideo) {
       imageElement = `<video src="${photoSrc}" muted preload="metadata" onError="this.style.display='none'; this.nextElementSibling.style.display='block';"></video>
         <div class="error-placeholder" style="display: none; padding: 20px; background: #f5f5f5; text-align: center; color: #666;">Video unavailable</div>`;
     } else {
-      imageElement = `<img src="${photoSrc}" alt="${photo.description || 'Wedding photo'}" loading="lazy" 
+      imageElement = `<img src="${photoSrc}" alt="${sanitizedDescription || 'Wedding photo'}" loading="lazy" 
         onError="this.style.display='none'; this.nextElementSibling.style.display='block';" 
         onLoad="this.style.display='block'; this.nextElementSibling.style.display='none';">
         <div class="error-placeholder" style="display: none; padding: 20px; background: #f5f5f5; text-align: center; color: #666; border-radius: 8px;">
@@ -1653,8 +1653,8 @@ function displayGallery(photos) {
       <div class="gallery-item ${isVideo ? 'is-video' : ''}" onclick="openLightbox(${index})">
         ${imageElement}
         <div class="gallery-item-overlay">
-          <div class="gallery-item-title">${photo.name}</div>
-          <div class="gallery-item-meta">${photo.category} • ${new Date(photo.created_at).toLocaleDateString()}</div>
+          <div class="gallery-item-title">${sanitizedName}</div>
+          <div class="gallery-item-meta">${sanitizedCategory} • ${new Date(photo.created_at).toLocaleDateString()}</div>
         </div>
       </div>
     `;
@@ -1728,10 +1728,16 @@ function openLightbox(index) {
     };
   }
   
+  // Sanitize user-provided data
+  const sanitizedName = sanitizeInput(photo.name);
+  const sanitizedDescription = sanitizeInput(photo.description);
+  const sanitizedCategory = sanitizeInput(photo.category);
+  const sanitizedPhotoUrl = sanitizeInput(photo.photo_url);
+  
   // Set info
-  document.getElementById('lightbox-description').textContent = photo.description || 'No description';
-  document.getElementById('lightbox-contributor').textContent = photo.name;
-  document.getElementById('lightbox-category').textContent = photo.category;
+  document.getElementById('lightbox-description').textContent = sanitizedDescription || 'No description';
+  document.getElementById('lightbox-contributor').textContent = sanitizedName;
+  document.getElementById('lightbox-category').textContent = sanitizedCategory;
   document.getElementById('lightbox-date').textContent = new Date(photo.created_at).toLocaleDateString();
   
   // Add "View Original Link" button for all photos
@@ -1752,13 +1758,13 @@ function openLightbox(index) {
       transition: all 0.3s ease;
     `;
     linkButton.innerHTML = '🔗 View Original Link';
-    linkButton.onclick = () => window.open(photo.photo_url, '_blank');
+    linkButton.onclick = () => window.open(sanitizedPhotoUrl, '_blank');
     linkButton.onmouseover = () => linkButton.style.background = '#a98c3e';
     linkButton.onmouseout = () => linkButton.style.background = '#c8a951';
     lightboxInfo.appendChild(linkButton);
   } else {
     // Update the click handler for existing button
-    linkButton.onclick = () => window.open(photo.photo_url, '_blank');
+    linkButton.onclick = () => window.open(sanitizedPhotoUrl, '_blank');
   }
   
   lightbox.style.display = 'flex';
@@ -1849,11 +1855,11 @@ photoForm?.addEventListener('submit', async (e) => {
       
       // Provide platform-specific tips but don't block submission
       if (isGooglePhotos) {
-        console.log('📸 Google Photos detected: Make sure the link is set to "Anyone with the link can view"');
+        // Platform-specific tips for photo sharing
       } else if (isICloudPhotos) {
-        console.log('☁️ iCloud Photos detected: Ensure the album is shared publicly');
+        
       } else if (isDropbox) {
-        console.log('📁 Dropbox detected: Make sure the link has public access');
+        
       }
       
       const photoData = {
@@ -1919,20 +1925,19 @@ photoForm?.addEventListener('submit', async (e) => {
         
         if (response.ok && result.success) {
           successCount++;
-          console.log(`Successfully uploaded file ${i + 1}:`, result);
         } else {
-          console.error(`Failed to upload file ${i + 1}:`, {
+          // Log error details for debugging
+          const errorDetails = {
             status: response.status,
             error: result.error || 'Unknown error',
             result: result,
             fileSize: Math.round(file.size / 1024) + 'KB',
             fileName: file.name,
             fileType: file.type
-          });
+          };
           
           // Show specific error for this file
           const fileError = result.error || 'Upload failed';
-          console.error(`File "${file.name}" failed: ${fileError}`);
         }
       }
       
@@ -1942,7 +1947,6 @@ photoForm?.addEventListener('submit', async (e) => {
         showPhotoSuccess(`Uploaded ${successCount} of ${totalFiles} photos. Some uploads may have failed.`);
       } else {
         // Offer fallback to URL sharing with detailed guidance
-        console.log('File upload failed for all files, offering URL fallback');
         
         // Create a detailed error message with platform guidance
         const failureMessage = `File upload failed. Would you like to share via URL instead?\n\n📸 Here's how:\n\n✅ Google Photos: Upload photos → Select album → Click "Share" → Copy link\n✅ iCloud Photos: Upload to Shared Album → Copy sharing link\n✅ Dropbox: Upload files → Right-click → "Copy Dropbox link"\n\nMake sure links are set to public/viewable by anyone.`;
@@ -1965,8 +1969,6 @@ photoForm?.addEventListener('submit', async (e) => {
     }
     
   } catch (error) {
-    console.error('Photo submission error:', error);
-    
     // Show user-friendly error message with specific handling
     let errorMessage = 'Sorry, there was an error: ' + error.message;
     let showDebugHint = false;
@@ -2048,6 +2050,93 @@ function fileToBase64(file) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = error => reject(error);
   });
+}
+
+// Function to sanitize user input to prevent XSS
+function sanitizeInput(input) {
+  if (!input) return '';
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML;
+}
+
+// Function to show custom notifications
+function showNotification(message, type = 'info') {
+  // Remove any existing notifications
+  const existingNotification = document.querySelector('.custom-notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = 'custom-notification';
+  
+  // Set styles based on type
+  let backgroundColor, icon;
+  switch (type) {
+    case 'success':
+      backgroundColor = 'linear-gradient(135deg, #4caf50, #2e7d32)';
+      icon = '✅';
+      break;
+    case 'error':
+      backgroundColor = 'linear-gradient(135deg, #f44336, #d32f2f)';
+      icon = '❌';
+      break;
+    case 'warning':
+      backgroundColor = 'linear-gradient(135deg, #ff9800, #f57c00)';
+      icon = '⚠️';
+      break;
+    default:
+      backgroundColor = 'linear-gradient(135deg, #2196f3, #1976d2)';
+      icon = 'ℹ️';
+  }
+  
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${backgroundColor};
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 10000;
+    max-width: 400px;
+    font-weight: 500;
+    line-height: 1.5;
+    font-size: 14px;
+    border-left: 4px solid white;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+  `;
+  
+  notification.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="font-size: 1.2rem;">${icon}</div>
+      <div>${message}</div>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => {
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+  }, 10);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    notification.style.transform = 'translateX(100%)';
+    notification.style.opacity = '0';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 300);
+  }, 5000);
 }
 
 // Show photo success with custom message
@@ -2139,8 +2228,7 @@ wishesForm?.addEventListener('submit', async (e) => {
     createCelebration(wishesSuccess);
     
   } catch (error) {
-    console.error('Wishes submission error:', error);
-    alert('Sorry, there was an error submitting your wishes. Please try again.');
+    showNotification('Sorry, there was an error submitting your wishes. Please try again.', 'error');
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -2222,7 +2310,7 @@ function initializePhotoModal() {
     });
   });
   
-  console.log('Photo modal initialized successfully');
+  // Photo modal initialized successfully
 }
 
 // Enhanced loading sequence with elegant reveals
@@ -2554,8 +2642,8 @@ window.addEventListener('scroll', () => {
   lastScrollY = currentScrollY;
 });
 
-console.log('🎉 Enhanced wedding site loaded with dynamic features!');
-console.log('💕 Features: Floating hearts, particles, enhanced animations, scroll effects, and more!');
+// Enhanced wedding site loaded with dynamic features
+// Features: Floating hearts, particles, enhanced animations, scroll effects, and more
 
 // ========================================
 // ENHANCED MODERN FEATURES
@@ -2668,10 +2756,13 @@ function enhancePhotoGallery() {
   document.head.appendChild(style);
 }
 
-// Add floating particles effect
+// Add floating particles effect with throttling
 function createFloatingParticles() {
+  // Reduce frequency and use throttling for better performance
   setInterval(() => {
-    if (Math.random() < 0.1) { // 10% chance every interval
+    // Limit the number of particles on screen at once
+    const particleCount = document.querySelectorAll('.particle').length;
+    if (particleCount < 15 && Math.random() < 0.05) { // Max 15 particles, 5% chance
       const particle = document.createElement('div');
       particle.className = 'particle';
       particle.style.cssText = `
@@ -2690,13 +2781,14 @@ function createFloatingParticles() {
       
       document.body.appendChild(particle);
       
+      // Reduce lifetime to improve performance
       setTimeout(() => {
         if (particle.parentNode) {
           particle.parentNode.removeChild(particle);
         }
-      }, 12000);
+      }, 8000); // Reduced from 12000ms
     }
-  }, 2000);
+  }, 3000); // Increased interval from 2000ms to 3000ms
 }
 
 // Enhanced interactive elements
@@ -2753,8 +2845,8 @@ function initializeEnhancedFeatures() {
   // Ensure title visibility
   ensureTitleVisibility();
   
-  console.log('🎆 Enhanced wedding features initialized!');
-  console.log('🔥 Features: QR codes, enhanced gallery, floating particles, advanced interactions!');
+    // Enhanced wedding features initialized
+  // Features: QR codes, enhanced gallery, floating particles, advanced interactions
 }
 
 // Ensure title is always visible
@@ -2789,7 +2881,7 @@ function ensureTitleVisibility() {
     mainTitle.style.zIndex = '10';
     mainTitle.style.position = 'relative';
     
-    console.log('✅ Title visibility ensured:', mainTitle.textContent);
+    // Title visibility ensured
   }
 }
 
@@ -2811,7 +2903,7 @@ if (document.readyState === 'loading') {
       title.style.color = '#c8a951';
       title.style.zIndex = '10';
       title.style.position = 'relative';
-      console.log('⚡ Emergency title visibility activated');
+      // Emergency title visibility activated
     } else {
       // Title not found yet, try again in a moment
       setTimeout(checkTitle, 100);

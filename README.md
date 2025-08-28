@@ -136,6 +136,17 @@ If you encounter issues:
 3. Ensure your Neon database is accessible
 4. Test the API endpoints directly
 
+## 🌐 Browser Compatibility
+
+This website uses modern web technologies and is optimized for:
+- Chrome 60+
+- Firefox 55+
+- Safari 12+
+- Edge 79+
+- Mobile browsers (iOS Safari, Chrome for Android)
+
+Internet Explorer is not supported. Users with older browsers will be prompted to upgrade.
+
 ## 🎉 You're All Set!
 
 Your wedding RSVP system is now fully functional with:

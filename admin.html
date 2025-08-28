@@ -909,7 +909,6 @@
         const data = await response.json();
         updateInsightsDisplay(data);
       } catch (error) {
-        console.error('Failed to load insights:', error);
         document.getElementById('predictions-content').innerHTML = '❌ Failed to load insights';
       }
     }
@@ -977,7 +976,6 @@
         }
       } catch (error) {
         showNotification('❌ Table optimization failed', 'error');
-        console.error('Table optimization error:', error);
       }
     }
 
@@ -1008,7 +1006,6 @@
         }
       } catch (error) {
         showNotification('❌ Smart reminders analysis failed', 'error');
-        console.error('Smart reminders error:', error);
       }
     }
 
@@ -1026,7 +1023,6 @@
         showNotification('✅ All reports generated successfully', 'success');
       } catch (error) {
         showNotification('❌ Report generation failed', 'error');
-        console.error('Report generation error:', error);
       }
     }
 
@@ -1068,22 +1064,83 @@
       }
     }
 
+    // Function to show custom notifications
     function showNotification(message, type = 'info') {
+      // Remove any existing notifications
+      const existingNotification = document.querySelector('.custom-notification');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+      
+      // Create notification element
       const notification = document.createElement('div');
-      notification.className = `notification ${type}`;
+      notification.className = 'custom-notification';
+      
+      // Set styles based on type
+      let backgroundColor, icon;
+      switch (type) {
+        case 'success':
+          backgroundColor = 'linear-gradient(135deg, #4caf50, #2e7d32)';
+          icon = '✅';
+          break;
+        case 'error':
+          backgroundColor = 'linear-gradient(135deg, #f44336, #d32f2f)';
+          icon = '❌';
+          break;
+        case 'warning':
+          backgroundColor = 'linear-gradient(135deg, #ff9800, #f57c00)';
+          icon = '⚠️';
+          break;
+        default:
+          backgroundColor = 'linear-gradient(135deg, #2196f3, #1976d2)';
+          icon = 'ℹ️';
+      }
+      
       notification.style.cssText = `
-        position: fixed; top: 20px; right: 20px; padding: 15px; 
-        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'}; 
-        color: white; border-radius: 8px; z-index: 2000; max-width: 300px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${backgroundColor};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        z-index: 10000;
+        max-width: 400px;
+        font-weight: 500;
+        line-height: 1.5;
+        font-size: 14px;
+        border-left: 4px solid white;
+        transform: translateX(100%);
+        opacity: 0;
+        transition: all 0.3s ease;
       `;
-      notification.textContent = message;
+      
+      notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 1.2rem;">${icon}</div>
+          <div>${message}</div>
+        </div>
+      `;
       
       document.body.appendChild(notification);
       
+      // Animate in
       setTimeout(() => {
-        notification.remove();
-      }, 4000);
+        notification.style.transform = 'translateX(0)';
+        notification.style.opacity = '1';
+      }, 10);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 300);
+      }, 5000);
     }
 
     // Authentication helper
@@ -1195,7 +1252,7 @@
       if (!requireAuth()) return;
       
       if (!selectedItems[type] || selectedItems[type].length === 0) {
-        alert('Please select items to delete.');
+        showNotification('Please select items to delete.', 'warning');
         return;
       }
       
@@ -1211,8 +1268,6 @@
       deleteBtn.disabled = true;
 
       try {
-        console.log('Deleting entries:', { type, ids: selectedItems[type] });
-        
         const response = await fetch('/.netlify/functions/delete-entries', {
           method: 'DELETE',
           headers: {
@@ -1222,13 +1277,11 @@
           body: JSON.stringify({ type: type, ids: selectedItems[type] })
         });
         
-        console.log('Delete response status:', response.status);
         const result = await response.json();
-        console.log('Delete response:', result);
         
         if (response.ok && result.success) {
           // Success feedback
-          alert(`✅ Successfully deleted ${result.deletedCount} ${type} entries!`);
+          showNotification(`✅ Successfully deleted ${result.deletedCount} ${type} entries!`, 'success');
           
           // Reset multi-select state
           selectedItems[type] = [];
@@ -1249,14 +1302,12 @@
         } else {
           // Handle API error responses
           const errorMsg = result.error || 'Unknown error occurred';
-          console.error('Delete API Error:', result);
-          alert(`❌ Failed to delete entries: ${errorMsg}`);
+          showNotification(`❌ Failed to delete entries: ${errorMsg}`, 'error');
         }
         
       } catch (error) {
         // Handle network errors
-        console.error('Delete Network Error:', error);
-        alert(`❌ Network error while deleting entries: ${error.message}`);
+        showNotification(`❌ Network error while deleting entries: ${error.message}`, 'error');
         
       } finally {
         // Reset button state
@@ -1299,7 +1350,7 @@
           `<option value="${rsvp.id}">${rsvp.name} (${rsvp.email})</option>`
         ).join('');
       } catch (error) {
-        console.error('Error loading guests:', error);
+        // Error handling is silent for this function
       }
     }
     
@@ -1329,7 +1380,6 @@
           select.innerHTML = '<option disabled>No attending guests found</option>';
         }
       } catch (error) {
-        console.error('Error loading guests for RSVP notification:', error);
         const select = document.getElementById('rsvp-notification-recipients');
         select.innerHTML = '<option disabled>Error loading guests</option>';
       }
@@ -1345,16 +1395,11 @@
           url += `?attendance=${filter}`;
         }
         
-        console.log('Loading RSVPs from:', url);
-        console.log('Using admin password:', adminPassword.substring(0, 10) + '...');
-        
         const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${adminPassword}` }
         });
         
-        console.log('Response status:', response.status);
         const result = await response.json();
-        console.log('Response data:', result);
         
         if (result.success) {
           // Update stats using the statistics from the response
@@ -1367,7 +1412,6 @@
           displayRSVPs(result.data);
         } else {
           const errorMsg = result.error || 'Unknown error loading RSVPs';
-          console.error('RSVP Loading Error:', result);
           document.getElementById('rsvp-list').innerHTML = `
             <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
               <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Loading RSVPs</h4>
@@ -1381,7 +1425,6 @@
           `;
         }
       } catch (error) {
-        console.error('Error loading RSVPs:', error);
         document.getElementById('rsvp-list').innerHTML = `
           <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
             <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
@@ -1415,18 +1458,16 @@
         });
         
         const result = await response.json();
-        console.log('Migration result:', result);
         
         if (result.success) {
-          alert('✅ Database migration completed successfully!');
+          showNotification('✅ Database migration completed successfully!', 'success');
           // Reload RSVPs after successful migration
           loadRSVPs();
         } else {
-          alert('❌ Migration failed: ' + (result.error || 'Unknown error'));
+          showNotification('❌ Migration failed: ' + (result.error || 'Unknown error'), 'error');
         }
       } catch (error) {
-        console.error('Migration error:', error);
-        alert('❌ Migration failed: ' + error.message);
+        showNotification('❌ Migration failed: ' + error.message, 'error');
       } finally {
         migrationBtn.textContent = originalText;
         migrationBtn.disabled = false;
@@ -1536,23 +1577,28 @@
           // Display guests list
           displayGuests(result.data);
         } else {
+          const errorMsg = result.error || 'Unknown error loading individual guests';
           document.getElementById('guests-list').innerHTML = `
-            <div class="error">
-              <h4>❌ Error Loading Individual Guests</h4>
-              <p>${result.error || 'Unknown error occurred'}</p>
-              <button onclick="migrateIndividualGuests()" class="btn btn-warning">🔄 Run Migration</button>
-              <button onclick="loadIndividualGuests()" class="btn btn-primary">🔄 Retry</button>
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Loading Individual Guests</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="migrateIndividualGuests()" style="background: #ff9800; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">🔄 Run Migration</button>
+                <button onclick="loadIndividualGuests()" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
             </div>
           `;
         }
       } catch (error) {
-        console.error('Error loading guests:', error);
         document.getElementById('guests-list').innerHTML = `
-          <div class="error">
-            <h4>❌ Network Error</h4>
-            <p>Failed to load individual guests: ${error.message}</p>
-            <button onclick="migrateIndividualGuests()" class="btn btn-warning">🔄 Run Migration</button>
-            <button onclick="loadIndividualGuests()" class="btn btn-primary">🔄 Retry</button>
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadIndividualGuests()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
           </div>
         `;
       }
@@ -1577,18 +1623,12 @@
         const result = await response.json();
         
         if (result.success) {
-          alert(`✅ Migration completed successfully!\n\n` +
-                `RSVPs processed: ${result.statistics.rsvps_processed}\n` +
-                `RSVPs migrated: ${result.statistics.rsvps_migrated}\n` +
-                `RSVPs skipped: ${result.statistics.rsvps_skipped}\n\n` +
-                `Total individual guests: ${result.statistics.total_individual_guests}\n` +
-                `Primary guests: ${result.statistics.primary_guests}\n` +
-                `Additional guests: ${result.statistics.additional_guests}`);
+          showNotification(`✅ Migration completed successfully! RSVPs processed: ${result.statistics.rsvps_processed}, RSVPs migrated: ${result.statistics.rsvps_migrated}, RSVPs skipped: ${result.statistics.rsvps_skipped}, Total individual guests: ${result.statistics.total_individual_guests}, Primary guests: ${result.statistics.primary_guests}, Additional guests: ${result.statistics.additional_guests}`, 'success');
           
           // Reload the guests list
           loadIndividualGuests();
         } else {
-          alert(`❌ Migration failed: ${result.error}`);
+          showNotification(`❌ Migration failed: ${result.error}`, 'error');
           document.getElementById('guests-list').innerHTML = `
             <div class="error">
               <h4>❌ Migration Failed</h4>
@@ -1598,8 +1638,7 @@
           `;
         }
       } catch (error) {
-        console.error('Migration error:', error);
-        alert(`❌ Migration failed: ${error.message}`);
+        showNotification(`❌ Migration failed: ${error.message}`, 'error');
         document.getElementById('guests-list').innerHTML = `
           <div class="error">
             <h4>❌ Migration Error</h4>
@@ -1658,7 +1697,6 @@
           document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
         }
       } catch (error) {
-        console.error('Error filtering guests:', error);
         document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
       }
     }
@@ -1687,21 +1725,27 @@
           displayTables(result.data);
           displayUnassignedGuests(result.data.unassigned_guests || []);
         } else {
+          const errorMsg = result.error || 'Unknown error loading table data';
           document.getElementById('table-grid').innerHTML = `
-            <div class="error">
-              <h4>❌ Error Loading Table Data</h4>
-              <p>${result.error || 'Unknown error occurred'}</p>
-              <button onclick="loadTableData()" class="btn btn-primary">🔄 Retry</button>
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Loading Table Data</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="loadTableData()" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
             </div>
           `;
         }
       } catch (error) {
-        console.error('Error loading table data:', error);
         document.getElementById('table-grid').innerHTML = `
-          <div class="error">
-            <h4>❌ Network Error</h4>
-            <p>Failed to load table data: ${error.message}</p>
-            <button onclick="loadTableData()" class="btn btn-primary">🔄 Retry</button>
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadTableData()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
           </div>
         `;
       }
@@ -1794,8 +1838,16 @@
           displaySongs(result.data);
         }
       } catch (error) {
-        console.error('Error loading songs:', error);
-        document.getElementById('songs-list').innerHTML = '<div class="error">Error loading songs</div>';
+        document.getElementById('songs-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadSongs()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
       }
     }
 
@@ -1840,8 +1892,16 @@
           displayPhotos(result.data);
         }
       } catch (error) {
-        console.error('Error loading photos:', error);
-        document.getElementById('photos-list').innerHTML = '<div class="error">Error loading photos</div>';
+        document.getElementById('photos-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadPhotos()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
       }
     }
 
@@ -1867,33 +1927,6 @@
             <p><strong>Description:</strong> ${photo.description || 'No description'}</p>
             <p><strong>URL:</strong> <a href="${photo.photo_url}" target="_blank">View Photo</a></p>
             <p><strong>Date:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function displayWishes(wishes) {
-      const container = document.getElementById('wishes-list');
-      if (wishes.length === 0) {
-        container.innerHTML = '<div class="loading">No wishes yet</div>';
-        return;
-      }
-      
-      container.innerHTML = wishes.map(wish => `
-        <div class="rsvp-item" data-item-id="${wish.id}">
-          ${multiSelectMode.wishes ? `
-            <div class="checkbox-item">
-              <input type="checkbox" id="wish-${wish.id}" onchange="updateSelectedCount('wishes')">
-              <label for="wish-${wish.id}">Select</label>
-            </div>
-          ` : ''}
-          <div class="rsvp-details">
-            <h3>${wish.name}</h3>
-            <p><strong>Email:</strong> ${wish.email}</p>
-            <p><strong>Type:</strong> ${wish.message_type}</p>
-            <p><strong>Relationship:</strong> ${wish.relationship || 'Not specified'}</p>
-            <p><strong>Message:</strong> ${wish.message}</p>
-            <p><strong>Date:</strong> ${new Date(wish.created_at).toLocaleDateString()}</p>
           </div>
         </div>
       `).join('');
@@ -1942,11 +1975,29 @@
           // Display notifications list
           displayNotifications(result.data);
         } else {
-          document.getElementById('notifications-list').innerHTML = '<div class="error">Error loading notifications</div>';
+          const errorMsg = result.error || 'Unknown error loading notifications';
+          document.getElementById('notifications-list').innerHTML = `
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Loading Notifications</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="loadNotifications()" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
+            </div>
+          `;
         }
       } catch (error) {
-        console.error('Error loading notifications:', error);
-        document.getElementById('notifications-list').innerHTML = '<div class="error">Error loading notifications</div>';
+        document.getElementById('notifications-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadNotifications()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
       }
     }
     
@@ -1992,11 +2043,29 @@
           document.getElementById('popular-message-type').textContent = result.statistics?.type_breakdown?.[0]?.message_type || 'N/A';
           displayWishes(result.data);
         } else {
-          document.getElementById('wishes-list').innerHTML = '<div class="error">Error loading wishes</div>';
+          const errorMsg = result.error || 'Unknown error loading wishes';
+          document.getElementById('wishes-list').innerHTML = `
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Loading Wishes</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="loadWishes()" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
+            </div>
+          `;
         }
       } catch (error) {
-        console.error('Error loading wishes:', error);
-        document.getElementById('wishes-list').innerHTML = '<div class="error">Error loading wishes</div>';
+        document.getElementById('wishes-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="loadWishes()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
       }
     }
     
@@ -2017,11 +2086,29 @@
         if (result.success) {
           displayPhotos(result.data);
         } else {
-          document.getElementById('photos-list').innerHTML = '<div class="error">Error filtering photos</div>';
+          const errorMsg = result.error || 'Unknown error filtering photos';
+          document.getElementById('photos-list').innerHTML = `
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Filtering Photos</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="filterPhotos('${category}')" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
+            </div>
+          `;
         }
       } catch (error) {
-        console.error('Error filtering photos:', error);
-        document.getElementById('photos-list').innerHTML = '<div class="error">Error filtering photos</div>';
+        document.getElementById('photos-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="filterPhotos('${category}')" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
       }
     }
     
@@ -2042,11 +2129,29 @@
         if (result.success) {
           displayWishes(result.data);
         } else {
-          document.getElementById('wishes-list').innerHTML = '<div class="error">Error filtering wishes</div>';
+          const errorMsg = result.error || 'Unknown error filtering wishes';
+          document.getElementById('wishes-list').innerHTML = `
+            <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+              <h4 style="color: #d32f2f; margin: 0 0 10px 0;">❌ Error Filtering Wishes</h4>
+              <p style="margin: 5px 0;"><strong>Error:</strong> ${errorMsg}</p>
+              ${result.details ? `<p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Details:</strong> ${result.details.message || JSON.stringify(result.details)}</p>` : ''}
+              <div style="margin-top: 15px;">
+                <button onclick="filterWishes('${messageType}')" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+              </div>
+            </div>
+          `;
         }
       } catch (error) {
-        console.error('Error filtering wishes:', error);
-        document.getElementById('wishes-list').innerHTML = '<div class="error">Error filtering wishes</div>';
+        document.getElementById('wishes-list').innerHTML = `
+          <div class="error" style="padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px; margin: 10px 0;">
+            <h4 style="color: #d32f2f; margin: 0 0 10px 0;">🌐 Network Error</h4>
+            <p style="margin: 5px 0;"><strong>Error:</strong> ${error.message}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">This could be a network issue or server problem.</p>
+            <div style="margin-top: 15px;">
+              <button onclick="filterWishes('${messageType}')" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+            </div>
+          </div>
+        `;
       }
     }
     
@@ -2093,7 +2198,7 @@
       if (!requireAuth()) return;
       
       if (selectedGuests.length === 0) {
-        alert('Please select guests to unassign by clicking on them.');
+        showNotification('Please select guests to unassign by clicking on them.', 'warning');
         return;
       }
       
@@ -2119,16 +2224,15 @@
         const result = await response.json();
         
         if (result.success) {
-          alert(`✅ Successfully unassigned ${result.updated_count} guests!`);
+          showNotification(`✅ Successfully unassigned ${result.updated_count} guests!`, 'success');
           selectedGuests = []; // Clear selection
           loadTableData(); // Refresh the table display
         } else {
-          alert(`❌ Unassignment failed: ${result.error}`);
+          showNotification(`❌ Unassignment failed: ${result.error}`, 'error');
         }
         
       } catch (error) {
-        console.error('Error unassigning guests:', error);
-        alert('Error unassigning guests. Please try again.');
+        showNotification('Error unassigning guests. Please try again.', 'error');
       }
     }
     
@@ -2141,7 +2245,7 @@
       const selectedRecipients = Array.from(document.getElementById('notification-recipients').selectedOptions).map(option => option.value);
       
       if (selectedRecipients.length === 0) {
-        alert('Please select at least one recipient');
+        showNotification('Please select at least one recipient', 'warning');
         return;
       }
       
@@ -2165,15 +2269,14 @@
         const result = await response.json();
         
         if (result.success) {
-          alert(`Notification sent to ${selectedRecipients.length} recipients!`);
+          showNotification(`Notification sent to ${selectedRecipients.length} recipients!`, 'success');
           hideNotificationComposer();
           form.reset();
         } else {
-          alert('Error sending notification: ' + (result.error || 'Unknown error'));
+          showNotification('Error sending notification: ' + (result.error || 'Unknown error'), 'error');
         }
       } catch (error) {
-        console.error('Notification error:', error);
-        alert('Error sending notification. Please try again.');
+        showNotification('Error sending notification. Please try again.', 'error');
       }
     }
     
@@ -2186,7 +2289,7 @@
       const selectedRecipients = Array.from(document.getElementById('rsvp-notification-recipients').selectedOptions).map(option => option.value);
       
       if (selectedRecipients.length === 0) {
-        alert('Please select at least one recipient');
+        showNotification('Please select at least one recipient', 'warning');
         return;
       }
       
@@ -2204,8 +2307,6 @@
       submitBtn.disabled = true;
       
       try {
-        console.log('Sending RSVP notification:', notificationData);
-        
         const response = await fetch('/.netlify/functions/send-notification', {
           method: 'POST',
           headers: {
@@ -2216,7 +2317,6 @@
         });
         
         const result = await response.json();
-        console.log('RSVP notification response:', result);
         
         if (result.success) {
           let successMessage = `✅ ${result.message || 'Emails sent successfully!'}`;
@@ -2240,7 +2340,7 @@
             }
           }
           
-          alert(successMessage);
+          showNotification(successMessage, 'success');
           hideRSVPNotificationComposer();
           form.reset();
           // Refresh RSVPs to show updated notification status
@@ -2254,11 +2354,10 @@
             errorMessage += '2. Or configure Netlify Email Integration\n';
           }
           
-          alert(errorMessage);
+          showNotification(errorMessage, 'error');
         }
       } catch (err) {
-        console.error('Error sending RSVP notification:', err);
-        alert('Error sending RSVP notification. Please try again.');
+        showNotification('Error sending RSVP notification. Please try again.', 'error');
       } finally {
         // Restore button text and re-enable button
         submitBtn.textContent = originalText;
@@ -2315,7 +2414,6 @@
         }
       })
       .catch(error => {
-        console.error('Error filtering guests:', error);
         document.getElementById('guests-list').innerHTML = '<div class="error">Error filtering guests</div>';
       });
       
@@ -2366,7 +2464,6 @@
         }
       })
       .catch(error => {
-        console.error('Error loading unassigned guests:', error);
         document.getElementById('unassigned-list').innerHTML = '<div class="error">Error loading unassigned guests</div>';
       });
     }
@@ -2387,14 +2484,14 @@
         const result = await response.json();
         
         if (!result.success) {
-          alert('Error loading table data for auto-assignment.');
+          showNotification('Error loading table data for auto-assignment.', 'error');
           return;
         }
         
         const unassignedGuests = result.data.unassigned_guests || [];
         
         if (unassignedGuests.length === 0) {
-          alert('All guests are already assigned to tables!');
+          showNotification('All guests are already assigned to tables!', 'success');
           return;
         }
         
@@ -2430,13 +2527,13 @@
           
           // If we've run out of tables, create a new one
           if (currentTable > 20) {
-            alert('Warning: More than 20 tables would be needed. Please review assignments manually.');
+            showNotification('Warning: More than 20 tables would be needed. Please review assignments manually.', 'warning');
             break;
           }
         }
         
         if (assignments.length === 0) {
-          alert('No guests could be auto-assigned. All tables may be full.');
+          showNotification('No guests could be auto-assigned. All tables may be full.', 'warning');
           return;
         }
         
@@ -2463,15 +2560,14 @@
         const updateResult = await updateResponse.json();
         
         if (updateResult.success) {
-          alert(`✅ Successfully auto-assigned ${updateResult.updated_count} guests!\n\nRefreshing table view...`);
+          showNotification(`✅ Successfully auto-assigned ${updateResult.updated_count} guests! Refreshing table view...`, 'success');
           loadTableData(); // Refresh the table display
         } else {
-          alert(`❌ Auto-assignment failed: ${updateResult.error}`);
+          showNotification(`❌ Auto-assignment failed: ${updateResult.error}`, 'error');
         }
         
       } catch (error) {
-        console.error('Error auto-assigning tables:', error);
-        alert('Error auto-assigning tables. Please try again.');
+        showNotification('Error auto-assigning tables. Please try again.', 'error');
       }
     }
     
@@ -2584,11 +2680,10 @@
           // Refresh table data
           loadTableData();
         } else {
-          alert('Failed to update table assignment: ' + result.error);
+          showNotification('Failed to update table assignment: ' + result.error, 'error');
         }
       } catch (error) {
-        console.error('Error assigning guest to table:', error);
-        alert('Error updating table assignment. Please try again.');
+        showNotification('Error updating table assignment. Please try again.', 'error');
       }
     }
     
