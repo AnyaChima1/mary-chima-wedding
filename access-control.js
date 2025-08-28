@@ -21,12 +21,6 @@ function hideRestrictedSections() {
       }
     });
     
-    // Also hide the song request section for non-attending users
-    const songSection = document.querySelector('.card--song');
-    if (songSection) {
-      songSection.style.display = 'none';
-    }
-    
     // Show a message in the header instead of the RSVP button
     showAccessRestrictedMessageInHeader();
   }
@@ -128,12 +122,6 @@ function showRestrictedSections() {
       section.style.display = 'block';
     }
   });
-  
-  // Show the song request section for attending users
-  const songSection = document.querySelector('.card--song');
-  if (songSection) {
-    songSection.style.display = 'block';
-  }
   
   // Remove the access restricted message from header if it exists
   const headerMessage = document.getElementById('access-restricted-message-header');
@@ -252,5 +240,11 @@ document.addEventListener('DOMContentLoaded', function() {
   } else {
     // Hide restricted sections for new visitors
     hideRestrictedSections();
+  }
+  
+  // Also hide the song request section by default since it should only be accessible after RSVP
+  const songSection = document.querySelector('.card--song');
+  if (songSection) {
+    songSection.style.display = 'none';
   }
 });

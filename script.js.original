@@ -571,6 +571,13 @@ rsvpForm?.addEventListener('submit', async (e) => {
     
     // Show success state
     rsvpForm.style.display = 'none';
+    
+    // Hide the introductory message
+    const modalIntro = document.querySelector('#rsvp-modal .modal__intro');
+    if (modalIntro) {
+      modalIntro.style.display = 'none';
+    }
+    
     rsvpSuccess.style.display = 'block';
     
     // Update success message based on attendance selection and whether it was an update
@@ -606,6 +613,21 @@ rsvpForm?.addEventListener('submit', async (e) => {
     
     // Create celebration effect
     createCelebration(rsvpSuccess);
+    
+    // Handle access restriction based on attendance (for main form submission)
+    if (rsvpData.attendance === 'yes') {
+      // Grant access to restricted content
+      localStorage.setItem('weddingRSVPStatus', 'attending');
+      
+      // Show restricted sections
+      showRestrictedSections();
+      
+      // Show confirmation message
+      showRSVPConfirmation();
+    } else {
+      // Remove access if they're not attending
+      localStorage.removeItem('weddingRSVPStatus');
+    }
     
     console.log('RSVP Submitted Successfully:', result);
     
@@ -831,6 +853,27 @@ function showAccessRestrictedMessage() {
     </p>
     <button onclick="document.getElementById('rsvp-modal').classList.add('is-open'); document.body.style.overflow = 'hidden';" 
             class="btn btn--primary" style="font-size: 1.1rem; padding: 12px 30px;">
+// Prompt with rsvpw link or prompt guest link, prompt text depending
+var shouldSendRsVPwLink = true;
+
+// Show rsvp button
+function showRSVPButton() {
+  // Create rsvp button
+  const message = document.createElement('div');
+  message.id = 'access-restricted-message';
+  message.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    z-index: 1000;
+  `;
+  message.innerHTML = `
+    <button onclick="sendRSVP()">
       RSVP Now to Access
     </button>
   `;
@@ -844,6 +887,7 @@ function showAccessRestrictedMessage() {
 
 // Show restricted sections after successful RSVP
 function showRestrictedSections() {
+  console.log('showRestrictedSections called from script.js (duplicate function)');
   const restrictedSections = ['story', 'details', 'calendar', 'photos'];
   restrictedSections.forEach(sectionId => {
     const section = document.getElementById(sectionId);
@@ -963,6 +1007,13 @@ function enhanceRSVPSubmission() {
         
         // Show success state
         updatedForm.style.display = 'none';
+        
+        // Hide the introductory message
+        const modalIntro = document.querySelector('#rsvp-modal .modal__intro');
+        if (modalIntro) {
+          modalIntro.style.display = 'none';
+        }
+        
         rsvpSuccess.style.display = 'block';
         
         // Update success message based on attendance selection and whether it was an update
@@ -1268,6 +1319,9 @@ const ImageResizer = {
 ErrorLogger.log('info', 'SYSTEM_INIT', 'Enhanced debugging system initialized');
 
 // ========================================
+// DEBUG CONSOLE FUNCTIONALITY
+// ========================================
+
 // DEBUG CONSOLE FUNCTIONALITY
 // ========================================
 
