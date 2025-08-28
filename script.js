@@ -1422,8 +1422,11 @@ function selectUploadMethod(method) {
   } else if (method === 'file') {
     methodOptions[1]?.classList.add('active');
     
-    // Removed automatic file input click to prevent double dialog
-    // User will manually click the upload area or file input
+    // Open file dialog when the upload files option is clicked
+    const fileInput = document.getElementById('photo-files');
+    if (fileInput) {
+      fileInput.click();
+    }
   }
   
   // Show/hide upload sections
