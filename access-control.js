@@ -8,6 +8,13 @@ function hasRSVPdAsAttending() {
   return rsvpStatus === 'attending';
 }
 
+// Check if RSVP deadline has passed (September 20, 2025)
+function hasRSVPDeadlinePassed() {
+  const deadline = new Date('2025-09-20T23:59:59');
+  const now = new Date();
+  return now > deadline;
+}
+
 // Hide restricted sections for non-attending users
 function hideRestrictedSections() {
   // Only hide sections if user hasn't RSVP'd as attending
@@ -76,31 +83,61 @@ function showAccessRestrictedMessageInHeader() {
     });
     
     const subtext = document.createElement('p');
-    subtext.textContent = 'Please RSVP as attending to access the full wedding information.';
-    Object.assign(subtext.style, {
-      fontSize: '1.1rem',
-      lineHeight: '1.6',
-      color: '#333',
-      marginBottom: '25px'
-    });
-    
     const button = document.createElement('button');
-    button.textContent = 'RSVP Now to Access';
-    Object.assign(button.style, {
-      fontSize: '1.1rem',
-      padding: '12px 30px',
-      background: '#c8a951',
-      color: 'white',
-      border: 'none',
-      borderRadius: '24px',
-      cursor: 'pointer',
-      fontWeight: '500'
-    });
     
-    button.addEventListener('click', function() {
-      document.getElementById('rsvp-modal').classList.add('is-open');
-      document.body.style.overflow = 'hidden';
-    });
+    // Check if RSVP deadline has passed
+    if (hasRSVPDeadlinePassed()) {
+      // Deadline has passed - show emotional and appreciative message with emojis
+      subtext.textContent = 'Thank you so much for your interest in celebrating with us! 🙏 Our guest list is now complete, and we are deeply touched by the love and support from all of you. ❤️ While we can no longer accept new RSVPs, we hope you can still share in our joy from afar. 🌟';
+      Object.assign(subtext.style, {
+        fontSize: '1.1rem',
+        lineHeight: '1.6',
+        color: '#333',
+        marginBottom: '25px'
+      });
+      
+      // Create disabled button
+      button.textContent = 'RSVP Deadline Passed ⏳';
+      Object.assign(button.style, {
+        fontSize: '1.1rem',
+        padding: '12px 30px',
+        background: '#cccccc',
+        color: '#666666',
+        border: 'none',
+        borderRadius: '24px',
+        cursor: 'not-allowed',
+        fontWeight: '500'
+      });
+      
+      // Disable button functionality
+      button.disabled = true;
+    } else {
+      // Deadline has not passed - show normal message
+      subtext.textContent = 'Please RSVP as attending by 20 September 2025 to access the full wedding information.';
+      Object.assign(subtext.style, {
+        fontSize: '1.1rem',
+        lineHeight: '1.6',
+        color: '#333',
+        marginBottom: '25px'
+      });
+      
+      button.textContent = 'RSVP Now to Access ✨';
+      Object.assign(button.style, {
+        fontSize: '1.1rem',
+        padding: '12px 30px',
+        background: '#c8a951',
+        color: 'white',
+        border: 'none',
+        borderRadius: '24px',
+        cursor: 'pointer',
+        fontWeight: '500'
+      });
+      
+      button.addEventListener('click', function() {
+        document.getElementById('rsvp-modal').classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+      });
+    }
     
     // Assemble the message
     messageDiv.appendChild(title);
@@ -136,10 +173,24 @@ function showRestrictedSections() {
     headerMessage.remove();
   }
   
-  // Hide the RSVP button when user has already RSVP'd
+  // Handle the RSVP button in the header
   const rsvpButton = document.getElementById('rsvp-hero-btn');
   if (rsvpButton) {
-    rsvpButton.style.display = 'none';
+    // Check if RSVP deadline has passed
+    if (hasRSVPDeadlinePassed()) {
+      // Deadline has passed - disable the button
+      rsvpButton.textContent = 'RSVP Deadline Passed';
+      rsvpButton.style.background = '#cccccc';
+      rsvpButton.style.color = '#666666';
+      rsvpButton.style.cursor = 'not-allowed';
+      rsvpButton.onclick = function(e) {
+        e.preventDefault();
+        return false;
+      };
+    } else {
+      // Deadline has not passed - hide the button when user has already RSVP'd
+      rsvpButton.style.display = 'none';
+    }
   }
 }
 
