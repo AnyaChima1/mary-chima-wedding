@@ -1412,8 +1412,6 @@ function switchPhotoTab(tab) {
 function selectUploadMethod(method) {
   currentUploadMethod = method;
   
-
-  
   // Update method option styling
   document.querySelectorAll('.method-option').forEach(option => option.classList.remove('active'));
   
@@ -1424,13 +1422,8 @@ function selectUploadMethod(method) {
   } else if (method === 'file') {
     methodOptions[1]?.classList.add('active');
     
-    // Automatically open file picker when file method is selected
-    setTimeout(() => {
-      const fileInput = document.getElementById('photo-files');
-      if (fileInput) {
-        fileInput.click();
-      }
-    }, 100);
+    // Removed automatic file input click to prevent double dialog
+    // User will manually click the upload area or file input
   }
   
   // Show/hide upload sections
@@ -1490,15 +1483,44 @@ function handleFileSelect(e) {
   handleFiles(files);
 }
 
+// Enhanced file handling with HEIC support
 function handleFiles(files) {
   const validFiles = files.filter(file => {
-    const isValid = file.type.startsWith('image/') || file.type.startsWith('video/');
+    const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
     const isSmallEnough = file.size <= 10 * 1024 * 1024; // 10MB
-    return isValid && isSmallEnough;
+    return isValidType && isSmallEnough;
   });
   
-  selectedFiles = [...selectedFiles, ...validFiles];
-  updateFilePreview();
+  // Process files with HEIC conversion if needed
+  if (typeof isHeicFile === 'function' && typeof convertHeicToJpeg === 'function') {
+    Promise.all(validFiles.map(async (file) => {
+      if (isHeicFile(file)) {
+        try {
+          // Convert HEIC to JPEG
+          const jpegFile = await convertHeicToJpeg(file);
+          return jpegFile;
+        } catch (error) {
+          console.warn('Failed to convert HEIC file:', file.name, error);
+          // Show user-friendly notification about the conversion issue
+          showNotification(`Could not convert HEIC file ${file.name}. Uploading original file.`, 'warning');
+          // If conversion fails, keep original file
+          return file;
+        }
+      }
+      return file;
+    })).then(processedFiles => {
+      selectedFiles = [...selectedFiles, ...processedFiles];
+      updateFilePreview();
+    }).catch(error => {
+      console.error('Error processing files:', error);
+      // Fallback to original behavior
+      selectedFiles = [...selectedFiles, ...validFiles];
+      updateFilePreview();
+    });
+  } else {
+    selectedFiles = [...selectedFiles, ...validFiles];
+    updateFilePreview();
+  }
 }
 
 function updateFilePreview() {

@@ -1,0 +1,132 @@
+# Photo Upload Fixes Patch
+
+## Fix 1: Remove automatic file input click to prevent double dialog
+
+In script.js, find the selectUploadMethod function and replace this section:
+
+```javascript
+  } else if (method === 'file') {
+    methodOptions[1]?.classList.add('active');
+    
+    // Automatically open file picker when file method is selected
+    setTimeout(() => {
+      const fileInput = document.getElementById('photo-files');
+      if (fileInput) {
+        fileInput.click();
+      }
+    }, 100);
+  }
+```
+
+With this:
+
+```javascript
+  } else if (method === 'file') {
+    methodOptions[1]?.classList.add('active');
+    
+    // Removed automatic file input click to prevent double dialog
+    // User will manually click the upload area or file input
+  }
+```
+
+## Fix 2: Add HEIC support functions
+
+Add these functions at the end of script.js (before the closing braces):
+
+```javascript
+// Function to check if a file is HEIC format
+function isHeicFile(file) {
+  // Check file extension
+  const fileName = file.name.toLowerCase();
+  const isHeicExtension = fileName.endsWith('.heic') || fileName.endsWith('.heif');
+  
+  // Check MIME type if available
+  const isHeicMime = file.type === 'image/heic' || file.type === 'image/heif';
+  
+  return isHeicExtension || isHeicMime;
+}
+
+// Function to convert HEIC to JPEG using canvas
+async function convertHeicToJpeg(heicFile) {
+  return new Promise((resolve, reject) => {
+    // For HEIC files, we'll convert them to JPEG using canvas
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(heicFile);
+    
+    img.onload = function() {
+      // Create canvas and draw image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas dimensions to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw image on canvas
+      ctx.drawImage(img, 0, 0);
+      
+      // Convert to JPEG blob
+      canvas.toBlob((blob) => {
+        if (blob) {
+          // Create a new file with JPEG extension
+          const jpegFile = new File([blob], heicFile.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(jpegFile);
+        } else {
+          reject(new Error('Failed to convert HEIC to JPEG'));
+        }
+        // Clean up object URL
+        URL.revokeObjectURL(objectUrl);
+      }, 'image/jpeg', 0.92); // 92% quality
+    };
+    
+    img.onerror = function() {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load HEIC image'));
+    };
+    
+    // Try to load the HEIC file directly (might work in some browsers)
+    img.src = objectUrl;
+  });
+}
+
+// Enhanced file handling with HEIC support
+function handleFiles(files) {
+  const validFiles = files.filter(file => {
+    const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+    const isSmallEnough = file.size <= 10 * 1024 * 1024; // 10MB
+    return isValidType && isSmallEnough;
+  });
+  
+  // Process files with HEIC conversion if needed
+  Promise.all(validFiles.map(async (file) => {
+    if (isHeicFile(file)) {
+      try {
+        // Convert HEIC to JPEG
+        const jpegFile = await convertHeicToJpeg(file);
+        return jpegFile;
+      } catch (error) {
+        console.warn('Failed to convert HEIC file:', file.name, error);
+        // If conversion fails, keep original file
+        return file;
+      }
+    }
+    return file;
+  })).then(processedFiles => {
+    selectedFiles = [...selectedFiles, ...processedFiles];
+    updateFilePreview();
+  });
+}
+```
+
+## Fix 3: Update HTML to include HEIC support script
+
+In index.html, add the HEIC support script after the main script:
+
+```html
+  <script src="script.js"></script>
+  <script src="heic-support.js"></script>
+  <script src="access-control.js"></script>
+```
