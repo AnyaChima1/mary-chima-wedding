@@ -88,7 +88,7 @@ function showAccessRestrictedMessageInHeader() {
     // Check if RSVP deadline has passed
     if (hasRSVPDeadlinePassed()) {
       // Deadline has passed - show emotional and appreciative message with emojis
-      subtext.textContent = 'Thank you so much for your interest in celebrating with us! 🙏 Our guest list is now complete, and we are deeply touched by the love and support from all of you. ❤️ While we can no longer accept new RSVPs, we hope you can still share in our joy from afar. 🌟';
+      subtext.textContent = 'Our plans are set, our hearts are full, and your love makes it all the more special. 🌟❤️';
       Object.assign(subtext.style, {
         fontSize: '1.1rem',
         lineHeight: '1.6',
@@ -97,7 +97,7 @@ function showAccessRestrictedMessageInHeader() {
       });
       
       // Create disabled button
-      button.textContent = 'RSVP Deadline Passed ⏳';
+      button.textContent = 'Plans Finalized 🌟';
       Object.assign(button.style, {
         fontSize: '1.1rem',
         padding: '12px 30px',
