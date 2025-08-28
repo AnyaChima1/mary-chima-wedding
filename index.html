@@ -591,7 +591,7 @@
             <div id="file-upload" class="upload-section">
               <div class="form-group">
                 <label for="photo-files">Upload Photos/Videos *</label>
-                <div class="file-upload-area" onclick="document.getElementById('photo-files').click()" style="cursor: pointer;">
+                <div class="file-upload-area" onclick="if(!fileSelectionInProgress) { fileSelectionInProgress = true; document.getElementById('photo-files').click(); }" style="cursor: pointer;">
                   <div class="upload-icon">📷</div>
                   <div class="upload-text">
                     <strong>Click to select files</strong> or drag and drop

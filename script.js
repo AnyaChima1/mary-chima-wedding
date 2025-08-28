@@ -1408,6 +1408,9 @@ function switchPhotoTab(tab) {
   }
 }
 
+// Global flag to track if file selection is in progress
+let fileSelectionInProgress = false;
+
 // Upload method selection
 function selectUploadMethod(method) {
   currentUploadMethod = method;
@@ -1422,10 +1425,13 @@ function selectUploadMethod(method) {
   } else if (method === 'file') {
     methodOptions[1]?.classList.add('active');
     
-    // Open file dialog when the upload files option is clicked
-    const fileInput = document.getElementById('photo-files');
-    if (fileInput) {
-      fileInput.click();
+    // Only open file dialog when not already in progress
+    if (!fileSelectionInProgress) {
+      fileSelectionInProgress = true;
+      const fileInput = document.getElementById('photo-files');
+      if (fileInput) {
+        fileInput.click();
+      }
     }
   }
   
@@ -1482,6 +1488,9 @@ function setupFileUpload() {
 }
 
 function handleFileSelect(e) {
+  // Reset the file selection flag
+  fileSelectionInProgress = false;
+  
   const files = Array.from(e.target.files);
   handleFiles(files);
 }
@@ -1565,6 +1574,9 @@ function closePhotoModal() {
   photoModal.classList.remove('is-open');
   photoModal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
+  
+  // Reset file selection flag
+  fileSelectionInProgress = false;
   
   setTimeout(() => {
     // Reset form properly
