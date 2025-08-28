@@ -115,13 +115,20 @@ function showAccessRestrictedMessageInHeader() {
 
 // Show restricted sections after successful RSVP
 function showRestrictedSections() {
-  const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+  // Updated to include the 'rsvp' section which contains both RSVP form and song request card
+  const restrictedSections = ['story', 'details', 'calendar', 'photos', 'rsvp'];
   restrictedSections.forEach(sectionId => {
     const section = document.getElementById(sectionId);
     if (section) {
       section.style.display = 'block';
     }
   });
+  
+  // Also show the song request card specifically
+  const songSection = document.querySelector('.card--song');
+  if (songSection) {
+    songSection.style.display = 'block';
+  }
   
   // Remove the access restricted message from header if it exists
   const headerMessage = document.getElementById('access-restricted-message-header');
@@ -243,8 +250,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Also hide the song request section by default since it should only be accessible after RSVP
-  const songSection = document.querySelector('.card--song');
-  if (songSection) {
-    songSection.style.display = 'none';
+  // Only hide if user hasn't RSVP'd as attending
+  if (!hasRSVPdAsAttending()) {
+    const songSection = document.querySelector('.card--song');
+    if (songSection) {
+      songSection.style.display = 'none';
+    }
   }
 });

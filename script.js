@@ -548,6 +548,7 @@ rsvpForm?.addEventListener('submit', async (e) => {
     const rsvpData = {
       name: formData.get('name'),
       email: formData.get('email'),
+      phone: formData.get('phone') || '',
       attendance: formData.get('attendance'),
       guest_count: formData.get('guest_count') || '1',
       guest_names: formData.get('guest_names') || '',
