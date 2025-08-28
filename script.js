@@ -567,6 +567,18 @@ rsvpForm?.addEventListener('submit', async (e) => {
     
     // Show success state
     rsvpForm.style.display = 'none';
+    
+    // Hide introductory text
+    const modalIntro = rsvpModal.querySelector('.modal__intro');
+    if (modalIntro) modalIntro.style.display = 'none';
+    
+    // Hide all form groups and actions
+    const formGroups = rsvpForm.querySelectorAll('.form-group');
+    formGroups.forEach(group => group.style.display = 'none');
+    
+    const formActions = rsvpForm.querySelector('.form-actions');
+    if (formActions) formActions.style.display = 'none';
+    
     rsvpSuccess.style.display = 'block';
     
     // Update success message based on attendance selection and whether it was an update
@@ -766,6 +778,18 @@ songForm?.addEventListener('submit', async (e) => {
     }
     
     songForm.style.display = 'none';
+    
+    // Hide introductory text
+    const modalIntro = songModal.querySelector('.modal__intro');
+    if (modalIntro) modalIntro.style.display = 'none';
+    
+    // Hide all form groups and actions
+    const formGroups = songForm.querySelectorAll('.form-group');
+    formGroups.forEach(group => group.style.display = 'none');
+    
+    const formActions = songForm.querySelector('.form-actions');
+    if (formActions) formActions.style.display = 'none';
+    
     songSuccess.style.display = 'flex';
     createCelebration(songSuccess);
     
@@ -961,6 +985,11 @@ function enhanceRSVPSubmission() {
         
         // Show success state
         updatedForm.style.display = 'none';
+        
+        // Hide introductory text
+        const modalIntro = rsvpModal.querySelector('.modal__intro');
+        if (modalIntro) modalIntro.style.display = 'none';
+        
         rsvpSuccess.style.display = 'block';
         
         // Update success message based on attendance selection and whether it was an update
@@ -1584,6 +1613,18 @@ function closePhotoModal() {
     photoForm.style.display = 'flex';
     photoSuccess.style.display = 'none';
     
+    // Show introductory text
+    const modalIntro = document.querySelector('#photo-modal .modal__intro');
+    if (modalIntro) modalIntro.style.display = '';
+    
+    // Show method selector
+    const methodSelector = document.querySelector('.upload-method-selector');
+    if (methodSelector) methodSelector.style.display = '';
+    
+    // Show tips
+    const photoTips = document.querySelector('.photo-sharing-tips');
+    if (photoTips) photoTips.style.display = '';
+    
     // Reset upload method to URL
     currentUploadMethod = 'url';
     document.querySelectorAll('.method-option').forEach(option => option.classList.remove('active'));
@@ -2177,8 +2218,28 @@ function showNotification(message, type = 'info') {
 }
 
 // Show photo success with custom message
-function showPhotoSuccess(message = 'Thank you for sharing your memories with us!') {
+function showPhotoSuccess(message = 'Thank you for sharing your memories with us! 📸') {
+  // Hide form and any introductory text
   photoForm.style.display = 'none';
+  const modalIntro = document.querySelector('#photo-modal .modal__intro');
+  if (modalIntro) modalIntro.style.display = 'none';
+  
+  // Hide the upload method selector
+  const methodSelector = document.querySelector('.upload-method-selector');
+  if (methodSelector) methodSelector.style.display = 'none';
+  
+  // Hide any tips or additional information
+  const photoTips = document.querySelector('.photo-sharing-tips');
+  if (photoTips) photoTips.style.display = 'none';
+  
+  // Hide all form groups and actions
+  const formGroups = photoForm.querySelectorAll('.form-group');
+  formGroups.forEach(group => group.style.display = 'none');
+  
+  const formActions = photoForm.querySelector('.form-actions');
+  if (formActions) formActions.style.display = 'none';
+  
+  // Show success message
   photoSuccess.style.display = 'flex';
   
   // Update success message if provided
@@ -2260,8 +2321,22 @@ wishesForm?.addEventListener('submit', async (e) => {
       throw new Error(result.error || 'Failed to submit wishes');
     }
     
+    // Wishes submission success
     wishesForm.style.display = 'none';
+    
+    // Hide introductory text
+    const modalIntro = wishesModal.querySelector('.modal__intro');
+    if (modalIntro) modalIntro.style.display = 'none';
+    
+    // Hide all form groups and actions
+    const formGroups = wishesForm.querySelectorAll('.form-group');
+    formGroups.forEach(group => group.style.display = 'none');
+    
+    const formActions = wishesForm.querySelector('.form-actions');
+    if (formActions) formActions.style.display = 'none';
+    
     wishesSuccess.style.display = 'flex';
+    
     createCelebration(wishesSuccess);
     
   } catch (error) {
@@ -2288,11 +2363,45 @@ document.querySelectorAll('.modal__close, .modal-close-btn').forEach(btn => {
       setTimeout(() => {
         const form = modal.querySelector('form');
         const success = modal.querySelector('[id$="-success"]');
-        if (form && success) {
-          form.reset();
-          form.style.display = 'flex';
+        const modalIntro = modal.querySelector('.modal__intro');
+        const methodSelector = modal.querySelector('.upload-method-selector');
+        const tips = modal.querySelector('.photo-sharing-tips');
+        
+        // Reset success display
+        if (success) {
           success.style.display = 'none';
         }
+        
+        // Show form if it exists
+        if (form) {
+          form.reset();
+          form.style.display = 'flex';
+          
+          // Show all form groups and actions
+          const formGroups = form.querySelectorAll('.form-group');
+          formGroups.forEach(group => group.style.display = '');
+          
+          const formActions = form.querySelector('.form-actions');
+          if (formActions) formActions.style.display = '';
+        }
+        
+        // Show introductory text
+        if (modalIntro) {
+          modalIntro.style.display = '';
+        }
+        
+        // Show method selector if it exists
+        if (methodSelector) {
+          methodSelector.style.display = '';
+        }
+        
+        // Show tips if they exist
+        if (tips) {
+          tips.style.display = '';
+        }
+        
+        // Reset file selection state
+        fileSelectionInProgress = false;
       }, 300);
     }
   });
