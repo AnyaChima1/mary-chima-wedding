@@ -67,7 +67,7 @@ function showAccessRestrictedMessageInHeader() {
     
     // Create content
     const title = document.createElement('h2');
-    title.textContent = 'Private Wedding Information';
+    title.textContent = 'Save Your Spot';
     Object.assign(title.style, {
       color: '#c8a951',
       marginBottom: '15px',
@@ -114,7 +114,7 @@ function showAccessRestrictedMessageInHeader() {
       button.disabled = true;
     } else {
       // Deadline has not passed - show normal message
-      subtext.textContent = 'Please RSVP as attending by 20 September 2025 to access the full wedding information.';
+      subtext.textContent = 'We’d love to know if you’ll be celebrating with us! Kindly RSVP before 20 September 2025 to see all the wedding info. ❤️';
       Object.assign(subtext.style, {
         fontSize: '1.1rem',
         lineHeight: '1.6',
