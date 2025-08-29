@@ -122,7 +122,7 @@ function showAccessRestrictedMessageInHeader() {
         marginBottom: '25px'
       });
       
-      button.textContent = 'RSVP Now to Access ✨';
+      button.textContent = 'RSVP Now✨';
       Object.assign(button.style, {
         fontSize: '1.1rem',
         padding: '12px 30px',
