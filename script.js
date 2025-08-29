@@ -812,11 +812,12 @@ function hasRSVPdAsAttending() {
 }
 
 // Hide restricted sections for non-attending users
+// Keep the story section visible to everyone
 function hideRestrictedSections() {
   // Only hide sections if user hasn't RSVP'd as attending
   if (!hasRSVPdAsAttending()) {
-    // Hide the restricted sections
-    const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+    // Hide the restricted sections (excluding story section)
+    const restrictedSections = ['details', 'calendar', 'photos'];
     restrictedSections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) {
@@ -866,7 +867,7 @@ function showAccessRestrictedMessage() {
 
 // Show restricted sections after successful RSVP
 function showRestrictedSections() {
-  const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+  const restrictedSections = ['details', 'calendar', 'photos'];
   restrictedSections.forEach(sectionId => {
     const section = document.getElementById(sectionId);
     if (section) {

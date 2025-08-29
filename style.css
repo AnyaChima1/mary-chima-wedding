@@ -57,7 +57,8 @@ body {
 }
 
 /* Hidden sections by default - will be shown after RSVP */
-#story, #details, #rsvp, #calendar, #photos {
+/* Story section is visible to everyone, other sections are restricted */
+#details, #rsvp, #calendar, #photos {
   display: none;
 }
 

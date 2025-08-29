@@ -16,11 +16,12 @@ function hasRSVPDeadlinePassed() {
 }
 
 // Hide restricted sections for non-attending users
+// Keep the story section visible to everyone
 function hideRestrictedSections() {
   // Only hide sections if user hasn't RSVP'd as attending
   if (!hasRSVPdAsAttending()) {
-    // Hide the restricted sections (excluding RSVP section since it contains the form)
-    const restrictedSections = ['story', 'details', 'calendar', 'photos'];
+    // Hide the restricted sections (excluding story section)
+    const restrictedSections = ['details', 'calendar', 'photos'];
     restrictedSections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) {
@@ -74,7 +75,7 @@ function showAccessRestrictedMessageInHeader() {
     });
     
     const text = document.createElement('p');
-    text.textContent = 'This content is only available to confirmed guests.';
+    //text.textContent = 'This content is only available to confirmed guests.';
     Object.assign(text.style, {
       fontSize: '1.1rem',
       lineHeight: '1.6',
@@ -153,7 +154,7 @@ function showAccessRestrictedMessageInHeader() {
 // Show restricted sections after successful RSVP
 function showRestrictedSections() {
   // Updated to include the 'rsvp' section which contains both RSVP form and song request card
-  const restrictedSections = ['story', 'details', 'calendar', 'photos', 'rsvp'];
+  const restrictedSections = ['details', 'calendar', 'photos', 'rsvp'];
   restrictedSections.forEach(sectionId => {
     const section = document.getElementById(sectionId);
     if (section) {
