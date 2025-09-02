@@ -615,6 +615,21 @@ rsvpForm?.addEventListener('submit', async (e) => {
     // Create celebration effect
     createCelebration(rsvpSuccess);
     
+    // Handle access restriction based on attendance
+    if (rsvpData.attendance === 'yes') {
+      // Grant access to restricted content
+      localStorage.setItem('weddingRSVPStatus', 'attending');
+      
+      // Show restricted sections
+      showRestrictedSections();
+      
+      // Show confirmation message
+      showRSVPConfirmation();
+    } else {
+      // Remove access if they're not attending
+      localStorage.removeItem('weddingRSVPStatus');
+    }
+    
     
   } catch (error) {
     // Show user-friendly error message
